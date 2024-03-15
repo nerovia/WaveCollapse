@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WaveCollapse
+namespace WaveLib
 {
 	public interface IGrid<T> : IEnumerable<T>
 	{

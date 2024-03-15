@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Threading.Tasks.Dataflow;
-using WaveCollapse;
+using WaveLib;
 
-namespace WaveCollapse
+namespace WaveLib
 {
 
 	public class WaveAnalyzer()
@@ -47,7 +47,7 @@ namespace WaveCollapse
 			{
 				cell.SuperState.Clear();
 				cell.SuperState.UnionWith(tiles);
-				cell.DefiniteState = null;
+				cell.IsCollapsed = false;
 			}
 		}
 		
@@ -67,38 +67,28 @@ namespace WaveCollapse
 
 		int Collapse(Cell cell)
 		{
+			cell.IsCollapsed = true;
 			var state = cell.SuperState.ElementAtRandom(random);
-			cell.DefiniteState = state;
+			cell.SuperState.Clear();
+			cell.SuperState.Add(state);
 			return state;
 		}
 
 		void Refurbish(Cell cell, int x, int y)
 		{
 			cell.SuperState.UnionWith(tiles);
-			cell.DefiniteState = null;
-
+			cell.IsCollapsed = false;
 			foreach (var (neighbour, dx, dy) in cells.Neighbouring(x, y))
 			{
-				neighbour.DefiniteState = null;
-				cell.SuperState.UnionWith(tiles);
-				cell.SuperState.ExceptWith(rules.Where(it =>
-				{
-					var p = x + dx - it.DeltaX;
-					var q = y + dx - it.DeltaY;
-					if (!cells.ContainsIndex(p, q))
-						return false;
-					var c = cells[p, q];
-					if (!c.DefiniteState.HasValue)
-						return false;
-					return c.DefiniteState.Value != it.Subject;
-				}).Select(it => it.Object));
+				neighbour.SuperState.UnionWith(tiles);
+				neighbour .IsCollapsed = false;
 			}
 		}
 
 		void Propagate(int state, int x, int y)
 		{
-			var neighbours = cells.Neighbouring(x, y)
-				.Where(it => !it.cell.IsCollapsed);
+			var neighbours = cells.Neighbouring(x, y);
+				///.Where(it => it.cell.IsCollapsed);
 
 			foreach (var (cell, dx, dy) in neighbours)
 				cell.SuperState.IntersectWith(RemainingObjects(state, dx, dy));
@@ -179,9 +169,8 @@ namespace WaveCollapse
 	public class Cell
 	{
 		public ISet<int> SuperState { get; } = new HashSet<int>();
-		public int? DefiniteState { get; set; }
-		public bool IsCollapsed { get => DefiniteState.HasValue; }
-		public bool IsExhausted { get => SuperState.Count == 0; }
+		public int State { get => SuperState.Single(); }
+		public bool IsCollapsed { get; set; }
 	}
 
 	public static class Extensions

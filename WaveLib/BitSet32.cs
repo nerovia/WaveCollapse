@@ -3,10 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WaveCollapse
+namespace WaveLib
 {
 
 	class BitSet32() : ISet<int>
@@ -18,6 +19,9 @@ namespace WaveCollapse
 		}
 
 		uint _bitmap;
+
+		static uint Pack(IEnumerable<int> values) => (uint)values.Aggregate((it, acc) => acc | (1 << it));
+		
 
 		public int Count => BitOperations.PopCount(_bitmap);
 

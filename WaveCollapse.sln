@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveCollapse", "WaveCollapse.csproj", "{9FF73458-1F5B-4C92-932B-ED57FDAD77F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveLib", "WaveLib/WaveLib.csproj", "{9FF73458-1F5B-4C92-932B-ED57FDAD77F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WavePrompt", "..\WavePrompt\WavePrompt.csproj", "{132C2EC9-CFE6-4B29-8737-D7881AE4C4DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WavePrompt", "WavePrompt\WavePrompt.csproj", "{132C2EC9-CFE6-4B29-8737-D7881AE4C4DA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
