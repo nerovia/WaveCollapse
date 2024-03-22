@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace WaveLib
 {
+	/// <summary>
+	/// An abstraction for accessing indicies in of a grid.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
 	public interface IGrid<T> : IEnumerable<T>
 	{
 		int Width { get; }
@@ -68,13 +72,61 @@ namespace WaveLib
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
-	public static class ExtensionsGrid
+	class NeighbourEnumerator<T>(IGrid<T> grid, int x, int y) : IEnumerator<(T cell, int dx, int dy)>, IEnumerable<(T, int, int)>
+	{
+		const int MIN = -2;
+		const int MAX = 2;
+
+		int dx = MIN - 1;
+		int dy = MIN;
+
+		public (T, int, int) Current => (grid[x + dx, y + dy], dx, dy);
+
+		object? IEnumerator.Current => Current;
+
+		public void Dispose() { }
+
+		public IEnumerator<(T, int, int)> GetEnumerator() => this;
+
+		public bool MoveNext()
+		{
+
+			while (!grid.ContainsIndex(++dx + x, dy + y))
+			{
+				if (++dx > MAX)
+				{
+					dx = MIN;
+					dy++;
+				}
+				
+				if (dy > MAX)
+					return false;
+			}
+
+			return true;
+		}
+
+		public void Reset()
+		{
+			dx = MIN;
+			dy = MIN;
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public static class GridExtensions
 	{
 		public static IEnumerable<(T cell, int dx, int dy)> Neighbouring<T>(this IGrid<T> grid, int x, int y)
 		{
-			foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-				if (grid.ContainsIndex(x + dx, y + dy))
-					yield return (grid[x + dx, y + dy], dx, dy);
+			
+			return new NeighbourEnumerator<T>(grid, x, y);
+			//foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+			//	if (grid.ContainsInNdex(x + dx, y + dy))
+			//		yield return (grid[x + dx, y + dy], dx, dy);
 		}
 
 		public static bool ContainsIndex<T>(this IGrid<T> grid, int x, int y)
