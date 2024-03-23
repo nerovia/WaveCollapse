@@ -6,16 +6,15 @@ using WaveLib;
 
 namespace WaveLib
 {
-	public class WaveSynthesizer(int width, int height, Pattern[] patterns, Random random)
+	public class WaveSynthesizer(int width, int height, WaveSchema schema, Random random)
 	{
 		Func<int, int> weightSelector = id => 1;
-		ISet<int> subjectIds = new BitSet32(patterns.Select(it => it.Subject).Distinct());
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
 
 		public void Reset()
 		{
 			foreach (var cell in Grid)
-				cell.Reset(subjectIds);
+				cell.Reset(schema.TileIds);
 		}
 		
 		public bool TryNextCell(out GridPosition<Cell> pos)
@@ -40,24 +39,20 @@ namespace WaveLib
 
 		void Refurbish(GridPosition<Cell> pos)
 		{
-			pos.Item.Reset(subjectIds);
-			foreach (var (_, _, neighbor) in Grid.TraverseOffsets(pos.X, pos.Y, Pattern.Offsets))
-				neighbor.Reset(subjectIds);
+			pos.Item.Reset(schema.TileIds);
+			foreach (var (_, _, neighbor) in Grid.TraverseOffsets(pos.X, pos.Y, schema.Offsets))
+				neighbor.Reset(schema.TileIds);
 		}
 
 		void Propagate(int sub, int x, int y)
 		{
-			var neighbours = Grid.TraverseOffsets(x, y, Pattern.Offsets);
-			///.Where(it => it.cell.IsCollapsed);
+			var neighbours = Grid.TraverseOffsets(x, y, schema.Offsets);
 
 			foreach (var (dx, dy, cell) in neighbours)
-				cell.Reduce(RemainingPatterns(sub, dx, dy)); // SuperState.IntersectWith(RemainingPatterns(obj: sub, dx: -dx, dy: -dy));
+				cell.Reduce(RemainingPatterns(sub, dx, dy));
 
 			var exhausted = neighbours
 				.Where(pos => pos.Item.IsExhausted);
-
-			//foreach (var (cell, dx, dy) in exhausted)
-			//	Refurbish(cell, x + dx, y + dy);
 		}
 
 		public bool CollapseNext()
@@ -65,22 +60,18 @@ namespace WaveLib
 			if (TryNextCell(out var pos))
 			{
 				var (x, y, cell) = pos;
-				//Debug.WriteLine($"Collapsing index: [{x}, {y}], cell: ${cell}");
 				var state = cell.Collapse(random, weightSelector);
-				//Debug.WriteLine($"Propagating from index: [{x}, {y}], state: {state}");
 				Propagate(state, x, y);
 				return true;
 			}
 			return false;
 		}
 
-		IEnumerable<int> RemainingPatterns(int subject, int dx, int dy)
+		IEnumerable<int> RemainingPatterns(int subId, int dx, int dy)
 		{
-			var remaining = patterns
-				.Where(it => it.DeltaX == dx && it.DeltaY == dy)
-				.Where(it => it.Subject == subject)
-				.Select(it => it.Object);
-			//Debug.WriteLine($"Remaining Objects for delta: [{dx}, {dy}], {{ {remaining.JoinToString(", ")} }}");
+			var remaining = schema.Patterns
+				.Where(it => it.Satisfies(subId, dx, dy))
+				.Select(it => it.ObjectId);
 			return remaining;
 		}
 	}

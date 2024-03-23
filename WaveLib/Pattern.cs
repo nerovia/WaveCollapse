@@ -8,25 +8,23 @@ using System.Threading.Tasks.Dataflow;
 
 namespace WaveLib
 {
-	public record Pattern(int Subject, int Object, int DeltaX, int DeltaY) : IComparable<Pattern>
+	public record Pattern(int SubjectId, int ObjectId, int DeltaX, int DeltaY) : IComparable<Pattern>
 	{
-		public static (int, int)[] Offsets = [(1, 0), (-1, 0), (0, 1), (0, -1)];
-
 		public int CompareTo(Pattern? other)
 		{
 			if (other == null)
-				return -1;
+				return 1;
 
 			if (other == this) 
 				return 0;
 
 			int result;
 
-			result = Subject.CompareTo(other.Subject);
+			result = SubjectId.CompareTo(other.SubjectId);
 			if (result != 0)
 				return result;
 
-			result = Object.CompareTo(other.Object);
+			result = ObjectId.CompareTo(other.ObjectId);
 			if (result != 0)
 				return result;
 
@@ -35,6 +33,11 @@ namespace WaveLib
 				return result;
 
 			return DeltaY.CompareTo(other.DeltaY);
+		}
+
+		public bool Satisfies(int subId, int dx, int dy)
+		{
+			return (subId == SubjectId && dx == DeltaX && dy == DeltaY);
 		}
 
 		public override string ToString()
@@ -48,7 +51,7 @@ namespace WaveLib
 				_ => null,
 			};
 
-			return $"#{Subject} -> #{Object} : [{DeltaX,2},{DeltaY,2}] {tag}";
+			return $"#{SubjectId} -> #{ObjectId} : [{DeltaX,2},{DeltaY,2}] {tag}";
 		}
 	}
 }

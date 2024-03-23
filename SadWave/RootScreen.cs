@@ -17,6 +17,7 @@ namespace SadWave.Scenes
 		readonly DrawingArea canvas;
 		readonly WaveSynthesizer synthesizer;
 		readonly char[] tileSet;
+		readonly WaveSchema schema;
 		readonly Palette palette = new([
 			new Color(0xFF532b1d),
 			new Color(0xFF53257e),
@@ -83,13 +84,10 @@ namespace SadWave.Scenes
 				{ '#', '#', '#', '#', '#' }
 			};
 
-			var grid = Grid.From(cells);
-			var result = WaveAnalyzer.Analyze(grid);
-			tileSet = result.TileSet;
+			(schema, tileSet) = WaveSchema.Analyze(Grid.From(cells), WaveSchema.Stencil.Plus);
+			synthesizer = new WaveSynthesizer(canvas.Width, canvas.Height, schema, new Random(Environment.TickCount));
 
-			synthesizer = new WaveSynthesizer(canvas.Width, canvas.Height, result.Patterns, new Random(Environment.TickCount));
-
-			foreach (var pattern in result.Patterns.Select(PatternString))
+			foreach (var pattern in schema.Patterns.Select(PatternString))
 				list.Items.Add(pattern);
 		}
 
