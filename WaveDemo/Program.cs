@@ -64,8 +64,8 @@ void PrintGrid(IGrid<Cell> grid)
 		for (int x = 0; x < grid.Width; x++)
 		{
 			var cell = grid[x, y];
-			var glyph = cell.IsCollapsed ? (char)cell.State: (char)(cell.Entropy + '0');
-			var colorIdx = (cell.IsCollapsed ? cell.State: cell.Entropy) % 7 + 31;
+			var glyph = cell.IsCollapsed ? (char)cell.StateId: (char)(cell.Entropy + '0');
+			var colorIdx = (cell.IsCollapsed ? cell.StateId: cell.Entropy) % 7 + 31;
 			Console.Write($"\x1b[{colorIdx}m{glyph}");
 		}
 		Console.WriteLine();

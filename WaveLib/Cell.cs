@@ -4,8 +4,8 @@
 	{
 		ISet<int> SuperState { get; } = new HashSet<int>();
 
-		public int State { get; private set; } = -1;
-		public bool IsCollapsed { get => State != -1; }
+		public int StateId { get; private set; } = -1;
+		public bool IsCollapsed { get => StateId != -1; }
 		public bool IsExhausted { get => SuperState.Count == 0; }
 		public int Entropy { get => SuperState.Count; }
 
@@ -17,14 +17,14 @@
 
 		public int Collapse(Random random, Func<int, int> weightSelector)
 		{
-			State = SuperState.ElementAtRandom(random, weightSelector);
+			StateId = SuperState.ElementAtRandom(random, weightSelector);
 			SuperState.Clear();
-			return State;
+			return StateId;
 		}
 
 		public void Reset(IEnumerable<int> tiles)
 		{
-			State = -1;
+			StateId = -1;
 			SuperState.Clear();
 			SuperState.UnionWith(tiles);
 		}

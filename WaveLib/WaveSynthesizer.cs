@@ -6,19 +6,21 @@ using WaveLib;
 
 namespace WaveLib
 {
-	public class WaveSynthesizer(Random random, IGrid<Cell> cells, IEnumerable<Pattern> patterns, IEnumerable<int> tiles, Func<int, int> weightSelector)
+	public class WaveSynthesizer(int width, int height, Pattern[] patterns, Random random)
 	{
-		public IGrid<Cell> Grid { get; } = cells;
+		Func<int, int> weightSelector = id => 1;
+		ISet<int> subjectIds = new BitSet32(patterns.Select(it => it.Subject).Distinct());
+		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
 
 		public void Reset()
 		{
-			foreach (var cell in cells)
-				cell.Reset(tiles);
+			foreach (var cell in Grid)
+				cell.Reset(subjectIds);
 		}
 		
 		public bool TryNextCell(out GridPosition<Cell> pos)
 		{
-			var priority = cells.Traverse()
+			var priority = Grid.Traverse()
 				.Where(it => !it.Item.IsCollapsed)
 				.Where(it => !it.Item.IsExhausted)
 				.GroupBy(it => it.Item.Entropy)
@@ -38,14 +40,14 @@ namespace WaveLib
 
 		void Refurbish(GridPosition<Cell> pos)
 		{
-			pos.Item.Reset(tiles);
-			foreach (var (_, _, neighbor) in cells.TraverseOffsets(pos.X, pos.Y, Pattern.Offsets))
-				neighbor.Reset(tiles);
+			pos.Item.Reset(subjectIds);
+			foreach (var (_, _, neighbor) in Grid.TraverseOffsets(pos.X, pos.Y, Pattern.Offsets))
+				neighbor.Reset(subjectIds);
 		}
 
 		void Propagate(int sub, int x, int y)
 		{
-			var neighbours = cells.TraverseOffsets(x, y, Pattern.Offsets);
+			var neighbours = Grid.TraverseOffsets(x, y, Pattern.Offsets);
 			///.Where(it => it.cell.IsCollapsed);
 
 			foreach (var (dx, dy, cell) in neighbours)
@@ -63,9 +65,9 @@ namespace WaveLib
 			if (TryNextCell(out var pos))
 			{
 				var (x, y, cell) = pos;
-				Debug.WriteLine($"Collapsing index: [{x}, {y}], cell: ${cell}");
+				//Debug.WriteLine($"Collapsing index: [{x}, {y}], cell: ${cell}");
 				var state = cell.Collapse(random, weightSelector);
-				Debug.WriteLine($"Propagating from index: [{x}, {y}], state: {state}");
+				//Debug.WriteLine($"Propagating from index: [{x}, {y}], state: {state}");
 				Propagate(state, x, y);
 				return true;
 			}
@@ -78,7 +80,7 @@ namespace WaveLib
 				.Where(it => it.DeltaX == dx && it.DeltaY == dy)
 				.Where(it => it.Subject == subject)
 				.Select(it => it.Object);
-			Debug.WriteLine($"Remaining Objects for delta: [{dx}, {dy}], {{ {remaining.JoinToString(", ")} }}");
+			//Debug.WriteLine($"Remaining Objects for delta: [{dx}, {dy}], {{ {remaining.JoinToString(", ")} }}");
 			return remaining;
 		}
 	}

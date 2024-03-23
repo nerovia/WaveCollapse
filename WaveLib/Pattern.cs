@@ -39,16 +39,16 @@ namespace WaveLib
 
 		public override string ToString()
 		{
-			var relation = (DeltaX, DeltaY) switch
+			var tag = (DeltaX, DeltaY) switch
 			{
-				(1, 0) => "right",
-				(-1, 0) => "left ",
-				(0, 1) => "above",
-				(0, -1) => "below",
-				_ =>       " ??? ",
+				(1, 0) => "(r)",
+				(-1, 0) => "(l)",
+				(0, 1) => "(t)",
+				(0, -1) => "(b)",
+				_ => null,
 			};
 
-			return $"'{(char)Subject}' [ {relation} ] '{(char)Object}'";
+			return $"#{Subject} -> #{Object} : [{DeltaX,2},{DeltaY,2}] {tag}";
 		}
 	}
 }
