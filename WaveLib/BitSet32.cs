@@ -1,108 +1,160 @@
-﻿using System;
+﻿using MathNet.Numerics;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace WaveLib
 {
-
-	class BitSet32() : ISet<int>
+	public class BitSet32 : ISet<int>
 	{
-		public BitSet32(IEnumerable<int> values) : this()
+		const int MinValue = 0;
+		const int MaxValue = 32;
+
+		class Enumerator(uint map) : IEnumerator<int>
 		{
-			foreach (var value in values)
-				Add(value);
+			int idx = MinValue - 1;
+
+			public int Current => idx;
+
+			object IEnumerator.Current => Current;
+
+			public void Dispose() { }
+
+			public bool MoveNext()
+			{
+				do 
+				{
+					if (++idx >= MaxValue)
+						return false;
+				} 
+				while (0u == (map & (1u << idx)));
+				return true;
+			}
+
+			public void Reset()
+			{
+				idx = MinValue - 1;
+			}
 		}
 
-		uint _bitmap;
+		uint map;
 
-		static uint Pack(IEnumerable<int> values) => (uint)values.Aggregate((it, acc) => acc | (1 << it));
-		
+		static BitSet32 From(IEnumerable<int> items)
+		{
+			if (items is BitSet32 set)
+				return set;
+			return new BitSet32(items);
+		}
 
-		public int Count => BitOperations.PopCount(_bitmap);
+		public BitSet32()
+		{
+			map = 0;
+		}
 
-		public bool IsReadOnly => throw new NotImplementedException();
+		public BitSet32(IEnumerable<int> items)
+		{
+			if (items is BitSet32 set)
+			{
+				map = set.map;
+			}
+
+			foreach (var item in items)
+			{
+				if (item < MinValue || item >= MaxValue)
+					throw new ArgumentOutOfRangeException();
+				map |= (1u << item);
+			}
+		}
+
+		public int Count => BitOperations.PopCount(map);
+
+		public bool IsReadOnly => false;
 
 		public bool Add(int item)
 		{
-			if (item < 0 || item >= 32)
-				throw new ArgumentOutOfRangeException();
-			var flag = 1u << item;
-			if ((_bitmap & flag) != 0u)
+			if (Contains(item))
 				return false;
-			_bitmap |= flag;
+			map |= (1u << (int)item);
 			return true;
 		}
 
 		public void Clear()
 		{
-			_bitmap = 0;
+			map = 0u;
 		}
 
 		public bool Contains(int item)
 		{
-			if (item < 0 || item >= 32)
+			if (item < MinValue || item >= MaxValue)
 				throw new ArgumentOutOfRangeException();
-			return (_bitmap & (1u << item)) != 0;
+			return 0u != (map & (1u << item));
 		}
 
 		public void CopyTo(int[] array, int arrayIndex)
 		{
-			throw new NotImplementedException();
+			var seq = GetEnumerator();
+			while (seq.MoveNext() && arrayIndex < array.Length)
+				array[arrayIndex++] = seq.Current;
 		}
 
 		public void ExceptWith(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			map &= ~From(other).map;
 		}
 
-		public IEnumerator<int> GetEnumerator()
-		{
-			throw new NotImplementedException();
-		}
+		public IEnumerator<int> GetEnumerator() => new Enumerator(map);
 
 		public void IntersectWith(IEnumerable<int> other)
 		{
-			_bitmap &= new BitSet32(other)._bitmap;
+			map &= From(other).map;
 		}
 
 		public bool IsProperSubsetOf(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			var set = From(other);
+			return map != set.map & 0u == (map & ~set.map);
 		}
 
 		public bool IsProperSupersetOf(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			var set = From(other);
+			return map != set.map & 0u == (~map & set.map);
 		}
 
 		public bool IsSubsetOf(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			return 0u == (map & ~From(other).map);
 		}
 
 		public bool IsSupersetOf(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			return 0u == (~map & From(other).map);
 		}
 
 		public bool Overlaps(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			return 0u != (map | From(other).map);
 		}
 
 		public bool Remove(int item)
 		{
-			throw new NotImplementedException();
+			if (Contains(item))
+			{
+				map &= ~(1u << (int)item);
+				return true;
+			}
+			return false;
 		}
 
 		public bool SetEquals(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			return map == From(other).map;
 		}
 
 		public void SymmetricExceptWith(IEnumerable<int> other)
@@ -112,18 +164,11 @@ namespace WaveLib
 
 		public void UnionWith(IEnumerable<int> other)
 		{
-			throw new NotImplementedException();
+			map |= From(other).map;
 		}
 
-		void ICollection<int>.Add(int item)
-		{
-			throw new NotImplementedException();
-		}
+		void ICollection<int>.Add(int item) => Add(item);
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			throw new NotImplementedException();
-		}
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
-
 }
