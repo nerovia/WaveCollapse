@@ -1,5 +1,8 @@
 ﻿using WaveLib;
 
+var random = new Random(Environment.TickCount);
+var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black]).ToArray();
+
 var cells = new char[5, 5] // [height, width]
 {
 	{ '#', '#', '#', '#', '#' },
@@ -10,7 +13,7 @@ var cells = new char[5, 5] // [height, width]
 };
 
 var (schema, tileSet) = WaveSchema.Analyze(Grid.From(cells), WaveSchema.Stencil.Plus);
-var synthesizer = new WaveSynthesizer(40, 20, schema, new Random(Environment.TickCount));
+var synthesizer = new WaveSynthesizer(Console.BufferWidth, Console.BufferHeight, schema, random);
 
 Console.WriteLine("RULES");
 foreach (var pattern in schema.Patterns)
@@ -22,16 +25,21 @@ while (true)
 	Console.ReadLine();
 	Console.Clear();
 	Console.CursorVisible = false;
-	
+
+	random.Shuffle(palette);
 	synthesizer.Reset();
 	while (synthesizer.CollapseNext())
 	{
+		var foreground = Console.ForegroundColor;
+		var background = Console.BackgroundColor;
 		foreach (var (x, y, cell) in synthesizer.Changes)
 		{
 			Console.SetCursorPosition(x, y);
-			var glyph = cell.IsCollapsed ? tileSet[cell.StateId] : (char)(cell.Entropy + '0');
-			var colorIdx = (cell.IsCollapsed ? cell.StateId : cell.Entropy) % 7 + 31;
-			Console.Write($"\x1b[{colorIdx}m{glyph}");
+			Console.ForegroundColor = cell.IsCollapsed ? palette[cell.StateId] : palette[^cell.Entropy];
+			Console.BackgroundColor = cell.IsCollapsed ? Console.ForegroundColor : ConsoleColor.Black;
+			Console.Write(cell.IsCollapsed ? tileSet[cell.StateId] : (char)('0' + cell.Entropy));
 		}
+		Console.ForegroundColor = foreground;
+		Console.BackgroundColor = background;
 	}
 }
