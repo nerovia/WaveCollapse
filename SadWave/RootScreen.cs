@@ -1,31 +1,39 @@
 ﻿using MathNet.Numerics;
 using SadConsole.UI;
 using SadConsole.UI.Controls;
+using SadRogue.Primitives.GridViews;
 using WaveLib;
 
 namespace SadWave.Scenes
 {
-	internal class RootScreen : ScreenObject
+	internal class RootScreen : ControlsConsole
 	{
-		readonly ControlsConsole console;
-		readonly ScreenSurface canvas;
+		readonly DrawingArea canvas;
 		readonly WaveSynthesizer synthesizer;
 		readonly Palette palette = new([Color.Red, Color.Orange, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Violet, Color.Magenta]);
 
 		Task? generatorTask;
 		CancellationTokenSource? generatorCancellationSource;
 
-		public RootScreen()
+		public RootScreen() : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
 		{
-			console = new ControlsConsole(GameSettings.GAME_WIDTH, 1) { Position = new(1, 1) };
-			canvas = new ScreenSurface(GameSettings.GAME_WIDTH - 2, GameSettings.GAME_HEIGHT - 4) { Position = new(1, 3) };
-			Children.Add(canvas);
-			Children.Add(console);
+			var space1 = new Point(2, 1);
+			var space2 = space1 * 2;
+			var bounds = Surface.Bounds().Expand(-space2.X, -space2.Y);
+			
+			canvas = new(bounds.Width * 2 / 3, bounds.Height) { Position = space2 };
+			Controls.Add(canvas);
 
 			var button = new Button("Generate");
+			button.PlaceRelativeTo(canvas, Direction.Types.Right, space2.X);
 			button.Click += Click;
-			console.Controls.Add(button);
+			Controls.Add(button);
 
+			var list = new ListBox(bounds.Width - canvas.Width - space1.X, bounds.Height - 2);
+			list.PlaceRelativeTo(button, Direction.Types.Down, space1.Y);
+			Controls.Add(list);
+
+			Surface.DrawBox(canvas.Bounds.Expand(space1.X, space1.Y), ShapeParameters.CreateStyledBoxThick(Color.White));
 
 			var cells = new int[5, 5] // [height, width]
 			{
@@ -42,6 +50,9 @@ namespace SadWave.Scenes
 			var tiles = patterns.Keys.Select(it => it.Subject).Distinct();
 			var canvasGrid = Grid.Create<Cell>(canvas.Width, canvas.Height, _ => new());
 			synthesizer = new WaveSynthesizer(random, canvasGrid, patterns.Keys, tiles, it => 1);
+
+			foreach (var pattern in patterns)
+				list.Items.Add(pattern);
 		}
 
 		void Click(object? sender, EventArgs e)
@@ -60,7 +71,7 @@ namespace SadWave.Scenes
 		async Task Generate(CancellationToken cancellationToken)
 		{
 			synthesizer.Reset();
-			canvas.Clear();
+			canvas.Surface.Clear();
 			await Task.Yield();
 			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext())
 			{
