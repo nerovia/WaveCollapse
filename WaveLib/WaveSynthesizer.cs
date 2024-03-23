@@ -10,6 +10,7 @@ namespace WaveLib
 	{
 		Func<int, int> weightSelector = id => 1;
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
+		public List<GridPosition<Cell>> Changes { get; } = new();
 
 		public void Reset()
 		{
@@ -37,28 +38,23 @@ namespace WaveLib
 			}
 		}
 
-		void Refurbish(GridPosition<Cell> pos)
-		{
-			pos.Item.Reset(schema.TileIds);
-			foreach (var (_, _, neighbor) in Grid.TraverseOffsets(pos.X, pos.Y, schema.Offsets))
-				neighbor.Reset(schema.TileIds);
-		}
-
 		void Propagate(int sub, int x, int y)
 		{
 			var neighbours = Grid.TraverseOffsets(x, y, schema.Offsets);
 
 			foreach (var (dx, dy, cell) in neighbours)
+			{
 				cell.Reduce(RemainingPatterns(sub, dx, dy));
-
-			var exhausted = neighbours
-				.Where(pos => pos.Item.IsExhausted);
+				Changes.Add(new(dx + x, dy + y, cell));
+			}
 		}
 
 		public bool CollapseNext()
 		{
 			if (TryNextCell(out var pos))
 			{
+				Changes.Clear();
+				Changes.Add(pos);
 				var (x, y, cell) = pos;
 				var state = cell.Collapse(random, weightSelector);
 				Propagate(state, x, y);

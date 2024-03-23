@@ -71,6 +71,7 @@ namespace SadWave.Scenes
 
 			var list = new ListBox(bounds.Width - canvas.Width - space1.X, bounds.Height - 2);
 			list.PlaceRelativeTo(button, Direction.Types.Down, space1.Y);
+			list.IsEnabled = false;
 			Controls.Add(list);
 
 			Surface.DrawBox(canvas.Bounds.Expand(space1.X, space1.Y), ShapeParameters.CreateStyledBoxThick(Color.White));
@@ -127,12 +128,12 @@ namespace SadWave.Scenes
 
 		void RefreshCanvas()
 		{
-			foreach (var (x, y, cell) in synthesizer.Grid.Traverse())
+			foreach (var (x, y, cell) in synthesizer.Changes)
 			{
 				var coloredGlyph = canvas.Surface[x, y];
 				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.StateId] : (char)(cell.Entropy + '0');
-				coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.StateId] : Color.Transparent;
-				//coloredGlyph.Foreground = palette[cell.IsCollapsed ? cell.StateId : ^(cell.Entropy % palette.Length)];
+				//coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.StateId] : Color.Transparent;
+				coloredGlyph.Foreground = palette[cell.IsCollapsed ? cell.StateId : ^(cell.Entropy % palette.Length)];
 			}
 			canvas.IsDirty = true;
 		}
