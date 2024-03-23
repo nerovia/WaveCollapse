@@ -2,148 +2,132 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace WaveLib
 {
-	/// <summary>
-	/// An abstraction for accessing indicies in of a grid.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
+	public record struct GridPosition<T>(int X, int Y, T Item);
+
 	public interface IGrid<T> : IEnumerable<T>
 	{
 		int Width { get; }
 		int Height { get; }
-		T this[int x, int y] { get; }
-	}
-
-	public class Grid<T>(int width, int height) : IGrid<T>
-	{
-		public Grid(int width, int height, Func<int, T> init) : this(width, height)
-		{
-			for (int i = 0; i < Cells.Length; i++)
-				Cells[i] = init(i);
-		}
-
-		public Grid(int width, int height, Func<int, int, T> init) : this(width, height)
-		{
-			for (int i = 0, y = 0; y < Height; y++)
-				for (int x = 0; x < Width; x++, i++)
-					Cells[i] = init(x, y);
-		}
-
-		public T[] Cells { get; } = new T[width * height];
-		public int Width { get; } = width;
-		public int Height { get; } = height;
-
-		public T this[int x, int y]
-		{
-			get => Cells[x + y * Width];
-		}
-
-		public IEnumerator<T> GetEnumerator() => Cells.AsEnumerable().GetEnumerator();
-
-		IEnumerator IEnumerable.GetEnumerator() => Cells.GetEnumerator();
+		ref T this[int x, int y] { get; }
 	}
 
 	public static class Grid
 	{
-		public static Grid<T> FromArray<T>(T[,] values)
+		private class ArrayGrid<T>(int width, int height) : IGrid<T>
 		{
-			var grid = new Grid<T>(
-				values.GetLength(1), 
-				values.GetLength(0),
-				(x, y) => values[y, x]);
-			return grid;
+			public T[] Data { get; } = new T[width * height];
+			public int Width { get; } = width;
+			public int Height { get; } = height;
+			public ref T this[int x, int y] { get => ref Data[x + y * Width]; }
+
+			public IEnumerator<T> GetEnumerator() => Data.AsEnumerable().GetEnumerator();
+			IEnumerator IEnumerable.GetEnumerator() => Data.GetEnumerator();
+		}
+
+		public static IGrid<T> Create<T>(int width, int height) => new ArrayGrid<T>(width, height);
+
+		public static IGrid<T> Create<T>(int width, int height, Func<GridPosition<T>, T> initializer) => Create<T>(width, height).Fill(initializer);
+
+		public static IGrid<T> From<T>(T[,] data) => Create<T>(data.GetLength(1), data.GetLength(0)).Fill(pos => data[pos.Y, pos.X]);
+
+		public static GridPosition<T> At<T>(this IGrid<T> self, int x, int y) => new(x, y, self[x, y]);
+
+		public static IGrid<T> Fill<T>(this IGrid<T> self, T value) => self.Fill(_ => value);
+
+		public static IGrid<T> Fill<T>(this IGrid<T> self, Func<GridPosition<T>, T> selector)
+		{
+			for (int y = 0; y < self.Height; y++)
+				for (int x = 0; x < self.Width; x++)
+					self[x, y] = selector(self.At(x, y));
+			return self;
+		}
+
+		public static IGrid<TResult> Convert<T, TResult>(this IGrid<T> self, Func<T, TResult> converter)
+		{
+			return Create<TResult>(self.Width, self.Height).Fill(pos => converter(self[pos.X, pos.Y]));
+		}
+
+		public static IEnumerable<GridPosition<T>> Traverse<T>(this IGrid<T> self) => new GridTraversal<T>(self, GridRange.All);
+
+		public static IEnumerable<GridPosition<T>> TraverseRange<T>(this IGrid<T> self, GridRange range) => new GridTraversal<T>(self, range);
+
+		public static IEnumerable<GridPosition<T>> TraverseNeighbors<T>(this IGrid<T> self, int x, int y, int r = 1)
+		{
+			return self.TraverseRange(GridRange.FromRadius(x, y, r)).SkipWhile(pos => pos.Y == y && pos.X == x);
 		}
 	}
 
-	internal class SelectGrid<TSource, TResult>(IGrid<TSource> source, Func<TSource, TResult> selector) : IGrid<TResult>
+	public record struct GridRange(Range RangeX, Range RangeY)
 	{
-		public TResult this[int x, int y] => selector(source[x, y]);
+		public static GridRange All => new GridRange(Range.All, Range.All);
 
-		public int Width => source.Width;
+		public static GridRange FromRadius(int x, int y, int r)
+		{
+			var x0 = Math.Max(x - r, 0);
+			var xn = x + r + 1;
+			var y0 = Math.Max(y - r, 0);
+			var yn = y + r + 1;
+			return new GridRange(x0..xn, y0..yn);
+		}
+	
+		public (int x0, int xn, int y0, int yn) GetIndices(int width, int height)
+		{
+			var x0 = RangeX.Start.GetOffset(width);
+			var xn = RangeX.End.GetOffset(width);
+			var y0 = RangeY.Start.GetOffset(height);
+			var yn = RangeY.End.GetOffset(height);
+			return (Math.Max(x0, 0), Math.Min(xn, width), Math.Max(y0, 0), Math.Min(yn, height));
+		}
+	}
 
-		public int Height => source.Height;
+	public class GridTraversal<T>(IGrid<T> grid, GridRange range) : IEnumerable<GridPosition<T>>
+	{
+		(int x0, int xn, int y0, int yn) indices = range.GetIndices(grid.Width, grid.Height);
 
-		public IEnumerator<TResult> GetEnumerator() => source.Select(selector).GetEnumerator();
+		public IEnumerator<GridPosition<T>> GetEnumerator() => new GridTraverser<T>(grid, indices.x0, indices.xn, indices.y0, indices.yn);
 
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
-	class NeighbourEnumerator<T>(IGrid<T> grid, int x, int y) : IEnumerator<(T cell, int dx, int dy)>, IEnumerable<(T, int, int)>
+	public class GridTraverser<T>(IGrid<T> grid, int x0, int xn, int y0, int yn) : IEnumerator<GridPosition<T>>
 	{
-		const int MIN = -2;
-		const int MAX = 2;
+		int xi = x0 - 1;
+		int yi = y0;
 
-		int dx = MIN - 1;
-		int dy = MIN;
-
-		public (T, int, int) Current => (grid[x + dx, y + dy], dx, dy);
+		public GridPosition<T> Current => grid.At(xi, yi);
 
 		object? IEnumerator.Current => Current;
 
 		public void Dispose() { }
 
-		public IEnumerator<(T, int, int)> GetEnumerator() => this;
-
 		public bool MoveNext()
 		{
-
-			while (!grid.ContainsIndex(++dx + x, dy + y))
+			if (++xi >= xn)
 			{
-				if (++dx > MAX)
+				if (++yi >= yn)
 				{
-					dx = MIN;
-					dy++;
-				}
-				
-				if (dy > MAX)
+					xi = xn;
+					yi = yn;
 					return false;
+				}
+				xi = x0;
 			}
-
 			return true;
 		}
 
 		public void Reset()
 		{
-			dx = MIN;
-			dy = MIN;
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			throw new NotImplementedException();
-		}
-	}
-
-	public static class GridExtensions
-	{
-		public static IEnumerable<(T cell, int dx, int dy)> Neighbouring<T>(this IGrid<T> grid, int x, int y)
-		{
-			
-			return new NeighbourEnumerator<T>(grid, x, y);
-			//foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-			//	if (grid.ContainsInNdex(x + dx, y + dy))
-			//		yield return (grid[x + dx, y + dy], dx, dy);
-		}
-
-		public static bool ContainsIndex<T>(this IGrid<T> grid, int x, int y)
-		{
-			return x >= 0 && y >= 0 && x < grid.Width && y < grid.Height;
-		}
-
-		public static IEnumerable<(T cell, int x, int y)> Indexed<T>(this IGrid<T> grid)
-		{
-			for (int y = 0; y < grid.Height; y++)
-				for (int x = 0; x < grid.Width; x++)
-					yield return (grid[x, y], x, y);
-		}
-
-		public static IGrid<TResult> Select<TSource, TResult>(this IGrid<TSource> grid, Func<TSource, TResult> selector)
-		{
-			return new SelectGrid<TSource, TResult>(grid, selector);
+			xi = x0 - 1;
+			yi = y0;
 		}
 	}
 }

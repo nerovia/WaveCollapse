@@ -1,11 +1,4 @@
 ﻿using SadConsole.Configuration;
-using System.Runtime.CompilerServices;
-using WaveLib;
-
-var a = PrimitiveGrid.Create<string>(10, 10).Fill(pos => $"{pos.x}{pos.y}");
-
-
-
 
 Settings.WindowTitle = "My SadConsole Game";
 
@@ -17,5 +10,6 @@ Builder gameStartup = new Builder()
 	;
 
 Game.Create(gameStartup);
+Game.Instance.DefaultFontSize = IFont.Sizes.Two;
 Game.Instance.Run();
 Game.Instance.Dispose();

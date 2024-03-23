@@ -2,15 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WaveLib
+namespace WaveLib.Primitive
 {
-	public record struct GridPosition<T>(int x, int y, T value);
-
 	public static class PrimitiveGrid
 	{
 		public static T[,] Create<T>(int width, int height) => new T[height, width];
@@ -23,7 +19,7 @@ namespace WaveLib
 
 		public static int GetHeight<T>(this T[,] self) => self.GetLength(0);
 
-		public static T[,] Fill<T>(this T[,] self, T value) => self.Fill(_ =>  value);
+		public static T[,] Fill<T>(this T[,] self, T value) => self.Fill(_ => value);
 
 		public static T[,] Fill<T>(this T[,] self, Func<GridPosition<T>, T> selector)
 		{
@@ -33,26 +29,14 @@ namespace WaveLib
 			return self;
 		}
 
-		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self) => new GridEnumerator<T>(self);
+		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self) => new PrimitiveGridEnumerator<T>(self);
 
-		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self, Range x, Range y) => new GridEnumerator<T>(self, x, y);
+		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self, Range x, Range y) => new PrimitiveGridEnumerator<T>(self, x, y);
 
-		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self, int x, int y, int r = 1)
-		{
-			return self.Enumerate((x - r)..(x + r), (y - r)..(y + r));
-		}
+		public static IEnumerable<GridPosition<T>> Enumerate<T>(this T[,] self, int x, int y, int r = 1) => new PrimitiveGridEnumerator<T>(self, x - r, x + r + 1, y - r, y + r + 1);
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="self">The array to iterate over</param>
-	/// <param name="x0">The first horizontal index (inclusive)</param>
-	/// <param name="xn">The last horizontal index (exclusive)</param>
-	/// <param name="y0">The first vertical index (indlusive)</param>
-	/// <param name="yn">The last vertical index (exclusive)</param>
-	class GridEnumerator<T> : IEnumerator<GridPosition<T>>, IEnumerable<GridPosition<T>>
+	class PrimitiveGridEnumerator<T> : IEnumerator<GridPosition<T>>, IEnumerable<GridPosition<T>>
 	{
 		readonly T[,] self;
 		readonly int x0;
@@ -62,7 +46,7 @@ namespace WaveLib
 		int xi;
 		int yi;
 
-		private GridEnumerator(T[,] self, int x0, int xn, int y0, int yn)
+		public PrimitiveGridEnumerator(T[,] self, int x0, int xn, int y0, int yn)
 		{
 			this.self = self;
 			this.x0 = Math.Max(x0, 0);
@@ -73,7 +57,7 @@ namespace WaveLib
 			this.yi = 0;
 		}
 
-		public GridEnumerator(T[,] self)
+		public PrimitiveGridEnumerator(T[,] self)
 		{
 			this.self = self;
 			this.x0 = 0;
@@ -84,7 +68,7 @@ namespace WaveLib
 			this.yi = 0;
 		}
 
-		public GridEnumerator(T[,] self, Range x, Range y)
+		public PrimitiveGridEnumerator(T[,] self, Range x, Range y)
 		{
 			var width = self.GetWidth();
 			var height = self.GetHeight();

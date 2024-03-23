@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 using WaveLib;
 
@@ -7,39 +8,51 @@ namespace WaveLib
 {
 	public class WaveSynthesizer(Random random, IGrid<Cell> cells, IEnumerable<Pattern> patterns, IEnumerable<int> tiles, Func<int, int> weightSelector)
 	{
+		public IGrid<Cell> Grid { get; } = cells;
+
 		public void Reset()
 		{
 			foreach (var cell in cells)
 				cell.Reset(tiles);
 		}
 		
-		public (Cell cell, int x, int y)? NextCell()
+		public bool TryNextCell(out GridPosition<Cell> pos)
 		{
-			var priority = cells.Indexed()
-				.Where(it => !it.cell.IsCollapsed)
-				.Where(it => !it.cell.IsExhausted)
-				.GroupBy(it => it.cell.Entropy)
+			var priority = cells.Traverse()
+				.Where(it => !it.Item.IsCollapsed)
+				.Where(it => !it.Item.IsExhausted)
+				.GroupBy(it => it.Item.Entropy)
 				.OrderBy(it => it.Key);
-			return priority.FirstOrDefault()?.ElementAtRandom(random);
+
+			if (priority.Count() == 0)
+			{
+				pos = default;
+				return false;
+			}
+			else
+			{
+				pos = priority.First().ElementAtRandom(random);
+				return true;
+			}
 		}
 
-		void Refurbish(Cell cell, int x, int y)
+		void Refurbish(GridPosition<Cell> pos)
 		{
-			cell.Reset(tiles);
-			foreach (var (neighbour, dx, dy) in cells.Neighbouring(x, y))
-				neighbour.Reset(tiles);
+			pos.Item.Reset(tiles);
+			foreach (var (_, _, neighbor) in cells.TraverseNeighbors(pos.X, pos.Y))
+				neighbor.Reset(tiles);
 		}
 
 		void Propagate(int sub, int x, int y)
 		{
-			var neighbours = cells.Neighbouring(x, y);
+			var neighbours = cells.TraverseNeighbors(x, y);
 			///.Where(it => it.cell.IsCollapsed);
 
-			foreach (var (cell, dx, dy) in neighbours)
+			foreach (var (dx, dy, cell) in neighbours)
 				cell.Reduce(RemainingPatterns(sub, dx, dy)); // SuperState.IntersectWith(RemainingPatterns(obj: sub, dx: -dx, dy: -dy));
 
 			var exhausted = neighbours
-				.Where(it => it.cell.IsExhausted);
+				.Where(pos => pos.Item.IsExhausted);
 
 			//foreach (var (cell, dx, dy) in exhausted)
 			//	Refurbish(cell, x + dx, y + dy);
@@ -47,8 +60,9 @@ namespace WaveLib
 
 		public bool CollapseNext()
 		{
-			if (NextCell() is (Cell cell, int x, int y))
+			if (TryNextCell(out var pos))
 			{
+				var (x, y, cell) = pos;
 				Debug.WriteLine($"Collapsing index: [{x}, {y}], cell: ${cell}");
 				var state = cell.Collapse(random, weightSelector);
 				Debug.WriteLine($"Propagating from index: [{x}, {y}], state: {state}");

@@ -2,14 +2,14 @@
 {
 	public class WaveAnalyzer()
 	{
-		public Dictionary<Pattern, int> Analyze(IGrid<int> grid)
+		public static Dictionary<Pattern, int> Analyze(IGrid<int> grid)
 		{
 			//var rules = new Dictionary<Rule, int>();
 			var rules = new Dictionary<Pattern, int>();
 
-			foreach (var (sub, x, y) in grid.Indexed())
+			foreach (var (x, y, sub) in grid.Traverse())
 			{
-				foreach (var (obj, dx, dy) in grid.Neighbouring(x, y))
+				foreach (var (dx, dy, obj) in grid.TraverseNeighbors(x, y))
 				{
 					// rules.Add(new Rule(subject, @object, dx, dy));
 					var rule = new Pattern(sub, obj, dx, dy);

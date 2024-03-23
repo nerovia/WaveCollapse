@@ -1,15 +1,12 @@
 ﻿using WaveLib;
 
-var a = PrimitiveGrid.Create<string>(5, 5).Fill(pos => $"{pos.x}{pos.y}");
+var a = Grid.Create<string>(5, 5).Fill(pos => $"{pos.X}{pos.Y}");
 
 
-Console.WriteLine(string.Join("\n", a.Enumerate(0..1, 0..1)));
-
-
+Console.WriteLine(string.Join("\n", a.TraverseRange(new(0..1, 0..1))));
 
 
 
-return;
 
 var cells = new int[5, 5] // [height, width]
 {
@@ -20,10 +17,8 @@ var cells = new int[5, 5] // [height, width]
 	{ '#', '#', '#', '#', '#' }
 };
 
-var grid = Grid.FromArray(cells);
-var analyzer = new WaveAnalyzer();
-
-var rules = analyzer.Analyze(grid);
+var grid = Grid.From(cells);
+var rules = WaveAnalyzer.Analyze(grid);
 
 var tiles = grid
 	.GroupBy(it => it)
@@ -41,9 +36,9 @@ foreach (var (tileId, weight) in tiles)
 	Console.WriteLine($"'{(char)tileId}': {weight}");
 }
 
-Console.ReadLine(); 
+Console.ReadLine();
 
-var grid2 = new Grid<Cell>(40, 20, (x, y) => new Cell());
+var grid2 = Grid.Create<Cell>(40, 20, pos => new Cell()); //new Grid<Cell>(40, 20, (x, y) => new Cell());
 var random = new Random(Environment.TickCount);
 var wavePropagator = new WaveSynthesizer(random, grid2, rules.Keys, tiles.Keys, it => tiles[it]);
 

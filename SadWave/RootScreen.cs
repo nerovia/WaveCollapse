@@ -1,50 +1,78 @@
-﻿using SadConsole.UI;
+﻿using MathNet.Numerics;
+using SadConsole.UI;
+using SadConsole.UI.Controls;
 using WaveLib;
 
 namespace SadWave.Scenes
 {
-	internal class RootScreen : ControlsConsole
+	internal class RootScreen : ScreenObject
 	{
-		
+		readonly ControlsConsole console;
+		readonly ScreenSurface canvas;
+		readonly WaveSynthesizer synthesizer;
+		readonly Palette palette = new([Color.Red, Color.Orange, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Violet, Color.Magenta]);
 
-		public RootScreen() : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
+		Task? generatorTask;
+		CancellationTokenSource? generatorCancellationSource;
+
+		public RootScreen()
 		{
-			//var cells = new int[5, 5] // [height, width]
-			//{
-			//	{ '#', '#', '#', '#', '#' },
-			//	{ '#', '+', '+', '+', '#' },
-			//	{ '#', '+', '.', '+', '#' },
-			//	{ '#', '+', '+', '+', '#' },
-			//	{ '#', '#', '#', '#', '#' }
-			//};
+			console = new ControlsConsole(GameSettings.GAME_WIDTH, 1) { Position = new(1, 1) };
+			canvas = new ScreenSurface(GameSettings.GAME_WIDTH - 2, GameSettings.GAME_HEIGHT - 4) { Position = new(1, 3) };
+			Children.Add(canvas);
+			Children.Add(console);
 
-			//var grid = Grid.FromArray(cells);
-			//var analyzer = new WaveAnalyzer();
-
-			//var rules = analyzer.Analyze(grid);
-
-			//var tiles = grid
-			//	.GroupBy(it => it)
-			//	.ToDictionary(it => it.Key, it => it.Count());
+			var button = new Button("Generate");
+			button.Click += Click;
+			console.Controls.Add(button);
 
 
-			//Console.WriteLine("RULES");
-			//foreach (var rule in rules)
-			//{
-			//	Console.WriteLine($"{rule.Key}: {rule.Value}");
-			//}
-			//Console.WriteLine("TILES");
-			//foreach (var (tileId, weight) in tiles)
-			//{
-			//	Console.WriteLine($"'{(char)tileId}': {weight}");
-			//}
+			var cells = new int[5, 5] // [height, width]
+			{
+				{ '#', '#', '#', '#', '#' },
+				{ '#', '+', '+', '+', '#' },
+				{ '#', '+', '.', '+', '#' },
+				{ '#', '+', '+', '+', '#' },
+				{ '#', '#', '#', '#', '#' }
+			};
 
-			//Console.ReadLine();
+			var grid = Grid.From(cells);
+			var patterns = WaveAnalyzer.Analyze(grid);
+			var random = new Random(Environment.TickCount);
+			var tiles = patterns.Keys.Select(it => it.Subject).Distinct();
+			var canvasGrid = Grid.Create<Cell>(canvas.Width, canvas.Height, _ => new());
+			synthesizer = new WaveSynthesizer(random, canvasGrid, patterns.Keys, tiles, it => 1);
+		}
 
-			//var grid2 = new Grid<Cell>(40, 20, (x, y) => new Cell());
-			//var random = new Random(Environment.TickCount);
-			//var wavePropagator = new WaveSynthesizer(random, grid2, rules.Keys, tiles.Keys, it => tiles[it]);
+		void Click(object? sender, EventArgs e)
+		{
+			if (generatorCancellationSource != null)
+			{
+				generatorCancellationSource.Cancel();
+				generatorCancellationSource = null;
+				generatorTask = null;
+			}
 
+			generatorCancellationSource = new();
+			generatorTask = Generate(generatorCancellationSource.Token);
+		}
+
+		async Task Generate(CancellationToken cancellationToken)
+		{
+			synthesizer.Reset();
+			canvas.Clear();
+			await Task.Yield();
+			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext())
+			{
+				foreach (var (x, y, cell) in synthesizer.Grid.Traverse())
+				{
+					var coloredGlyph = canvas.Surface[x, y];
+					coloredGlyph.Glyph = cell.IsCollapsed ? (char)cell.State : (char)(cell.Entropy + '0');
+					coloredGlyph.Foreground = palette[(cell.IsCollapsed ? cell.State : cell.Entropy) % palette.Length];
+				}
+
+				canvas.IsDirty = true;
+			}
 		}
 	}
 }
