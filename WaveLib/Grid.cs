@@ -60,10 +60,7 @@ namespace WaveLib
 
 		public static IEnumerable<GridPosition<T>> TraverseRange<T>(this IGrid<T> self, GridRange range) => new GridTraversal<T>(self, range);
 
-		public static IEnumerable<GridPosition<T>> TraverseNeighbors<T>(this IGrid<T> self, int x, int y, int r = 1)
-		{
-			return self.TraverseRange(GridRange.FromRadius(x, y, r)).SkipWhile(pos => pos.Y == y && pos.X == x);
-		}
+		public static IEnumerable<GridPosition<T>> TraverseOffsets<T>(this IGrid<T> self, int x, int y, IEnumerable<(int x, int y)> offsets) => new GridOffsetTraversal<T>(self, x, y, offsets);
 	}
 
 	public record struct GridRange(Range RangeX, Range RangeY)
@@ -89,7 +86,7 @@ namespace WaveLib
 		}
 	}
 
-	public class GridTraversal<T>(IGrid<T> grid, GridRange range) : IEnumerable<GridPosition<T>>
+	class GridTraversal<T>(IGrid<T> grid, GridRange range) : IEnumerable<GridPosition<T>>
 	{
 		(int x0, int xn, int y0, int yn) indices = range.GetIndices(grid.Width, grid.Height);
 
@@ -98,7 +95,7 @@ namespace WaveLib
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
-	public class GridTraverser<T>(IGrid<T> grid, int x0, int xn, int y0, int yn) : IEnumerator<GridPosition<T>>
+	class GridTraverser<T>(IGrid<T> grid, int x0, int xn, int y0, int yn) : IEnumerator<GridPosition<T>>
 	{
 		int xi = x0 - 1;
 		int yi = y0;
@@ -128,6 +125,45 @@ namespace WaveLib
 		{
 			xi = x0 - 1;
 			yi = y0;
+		}
+	}
+
+	class GridOffsetTraversal<T>(IGrid<T> grid, int x, int y, IEnumerable<(int dx, int dy)> offsets) : IEnumerable<GridPosition<T>>
+	{
+		public IEnumerator<GridPosition<T>> GetEnumerator() => new GridOffsetTraverser<T>(grid, x, y, offsets);
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+	}
+
+	class GridOffsetTraverser<T>(IGrid<T> grid, int x, int y, IEnumerable<(int dx, int dy)> offsets) : IEnumerator<GridPosition<T>>
+	{
+		IEnumerator<(int dx, int dy)> offsetEnumerator = offsets.GetEnumerator();
+
+		int dx => offsetEnumerator.Current.dx;
+		int dy => offsetEnumerator.Current.dy;
+		int i => x + dx;
+		int j => y + dy;
+
+		public GridPosition<T> Current => new(dx, dy, grid[i, j]);
+
+		object IEnumerator.Current => Current;
+
+		public void Dispose() { }
+
+		public bool MoveNext()
+		{
+			do
+			{
+				if (!offsetEnumerator.MoveNext())
+					return false;
+			} 
+			while (i < 0 || j < 0 || i >= grid.Width || j >= grid.Height);
+			return true;
+		}
+
+		public void Reset()
+		{
+			offsetEnumerator.Reset();
 		}
 	}
 }

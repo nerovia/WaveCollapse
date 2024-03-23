@@ -9,7 +9,7 @@
 
 			foreach (var (x, y, sub) in grid.Traverse())
 			{
-				foreach (var (dx, dy, obj) in grid.TraverseNeighbors(x, y))
+				foreach (var (dx, dy, obj) in grid.TraverseOffsets(x, y, Pattern.Offsets))
 				{
 					// rules.Add(new Rule(subject, @object, dx, dy));
 					var rule = new Pattern(sub, obj, dx, dy);

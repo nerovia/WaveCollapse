@@ -39,13 +39,13 @@ namespace WaveLib
 		void Refurbish(GridPosition<Cell> pos)
 		{
 			pos.Item.Reset(tiles);
-			foreach (var (_, _, neighbor) in cells.TraverseNeighbors(pos.X, pos.Y))
+			foreach (var (_, _, neighbor) in cells.TraverseOffsets(pos.X, pos.Y, Pattern.Offsets))
 				neighbor.Reset(tiles);
 		}
 
 		void Propagate(int sub, int x, int y)
 		{
-			var neighbours = cells.TraverseNeighbors(x, y);
+			var neighbours = cells.TraverseOffsets(x, y, Pattern.Offsets);
 			///.Where(it => it.cell.IsCollapsed);
 
 			foreach (var (dx, dy, cell) in neighbours)
