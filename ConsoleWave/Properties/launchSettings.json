@@ -2,7 +2,7 @@
   "profiles": {
     "WaveDemo": {
       "commandName": "Project",
-      "commandLineArgs": "../../../../data/pattern1.txt\""
+      "commandLineArgs": "../../../../data/pattern2.txt\""
     }
   }
 }
