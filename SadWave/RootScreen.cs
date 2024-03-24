@@ -1,13 +1,7 @@
-﻿using MathNet.Numerics;
-using SadConsole.Effects;
-using SadConsole.StringParser;
-using SadConsole.UI;
+﻿using SadConsole.UI;
 using SadConsole.UI.Controls;
 using SadRogue.Primitives.GridViews;
-using SadRogue.Primitives.SerializedTypes;
-using System.Reflection.Metadata.Ecma335;
 using System.Text.RegularExpressions;
-using System.Threading;
 using WaveLib;
 
 namespace SadWave.Scenes
@@ -93,7 +87,6 @@ namespace SadWave.Scenes
 
 			generatorCancellationSource = new();
 			generatorTask = Generate(generatorCancellationSource.Token);
-			//await generatorTask;
 		}
 
 		async Task Generate(CancellationToken cancellationToken)
@@ -103,7 +96,7 @@ namespace SadWave.Scenes
 			await Task.Yield();
 			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext())
 			{
-				RefreshCanvas();
+				DrawCanvas(synthesizer.Changes);
 			}
 		}
 
@@ -112,17 +105,16 @@ namespace SadWave.Scenes
 			synthesizer.Reset();
 			canvas.Surface.Clear();
 			await Task.Yield();
-			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext()) ;
-			RefreshCanvas();
+			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext()) { }
+			DrawCanvas(synthesizer.Grid.Traverse());
 		}
 
-		void RefreshCanvas()
+		void DrawCanvas(IEnumerable<GridPosition<Cell>> changes)
 		{
-			foreach (var (x, y, cell) in synthesizer.Changes)
+			foreach (var (x, y, cell) in changes)
 			{
 				var coloredGlyph = canvas.Surface[x, y];
 				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
-				//coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.StateId] : Color.Transparent;
 				coloredGlyph.Foreground = cell.IsCollapsed ? Color.Black : palette[^cell.Entropy];
 				coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
 			}
