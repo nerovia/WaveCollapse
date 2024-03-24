@@ -43,7 +43,7 @@ namespace WaveLib
 				if (!reverse!.TryGetValue(tile, out var tileId))
 				{
 					tileId = tileSet!.Count;
-					reverse.Add(tile, tileSet.Count);
+					reverse.Add(tile, tileId);
 					tileSet.Add(tile);
 				}
 				return tileId;
