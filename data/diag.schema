@@ -1,9 +1,9 @@
 a \ a;
 ; l a
 .
-b \ b
+b x b
 ; - a, c
 .
-c \ c
-; r b
+c / c
+; - b
 .
