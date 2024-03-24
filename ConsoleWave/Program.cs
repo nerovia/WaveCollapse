@@ -35,7 +35,7 @@ void Draw(IEnumerable<GridPosition<Cell>> changes)
 	{
 		Console.SetCursorPosition(x, y);
 		Console.ForegroundColor = cell.IsCollapsed ? ConsoleColor.White : (cell.IsExhausted ? ConsoleColor.Black : palette[^cell.Entropy]);
-		//Console.BackgroundColor = cell.IsCollapsed ? palette![cell.TileId] : ConsoleColor.Black;
+		Console.BackgroundColor = cell.IsCollapsed ? palette![cell.TileId] : ConsoleColor.Black;
 		Console.Write(cell.IsCollapsed ? tileSet![cell.TileId] : (char)('0' + cell.Entropy));
 	}
 	Console.ForegroundColor = foreground;
