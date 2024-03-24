@@ -42,10 +42,10 @@ namespace WaveLib
 		{
 			var neighbours = Grid.TraverseOffsets(x, y, schema.Offsets);
 
-			foreach (var (dx, dy, cell) in neighbours)
+			foreach (var ((dx, dy), pos) in neighbours)
 			{
-				cell.Reduce(RemainingPatterns(sub, dx, dy));
-				Changes.Add(new(dx + x, dy + y, cell));
+				pos.Item.Reduce(RemainingPatterns(sub, dx, dy));
+				Changes.Add(pos);
 			}
 		}
 

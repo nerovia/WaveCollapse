@@ -12,7 +12,7 @@ namespace WaveLib
 	{
 		public readonly HashSet<int> TileIds = [];
 		public readonly HashSet<Pattern> Patterns = [];
-		public readonly List<(int, int)> Offsets = [];
+		public readonly List<GridOffset> Offsets = [];
 
 		public WaveSchema With(int subId, int objId, int dx, int dy)
 		{
@@ -26,13 +26,13 @@ namespace WaveLib
 			if (Patterns.Add(new(subId, objId, dx, dy)))
 			{
 				TileIds.Add(subId);
-				Offsets.Add((dx, dy));
+				Offsets.Add(new(dx, dy));
 				return true;
 			}
 			return false;
 		}
 
-		public static (WaveSchema, T[]) Analyze<T>(IGrid<T> grid, IEnumerable<(int, int)> offsets) where T : notnull
+		public static (WaveSchema, T[]) Analyze<T>(IGrid<T> grid, IEnumerable<GridOffset> offsets) where T : notnull
 		{
 			var schema = new WaveSchema();
 			var tileSet = new List<T>();
@@ -51,7 +51,7 @@ namespace WaveLib
 
 			foreach (var (x, y, sub) in grid.Traverse())
 			{
-				foreach (var (dx, dy, obj) in grid.TraverseOffsets(x, y, offsets))
+				foreach (var ((dx, dy), (_, _, obj)) in grid.TraverseOffsets(x, y, offsets))
 				{
 					var subId = GetTileId(sub);
 					var objId = GetTileId(obj);
@@ -64,8 +64,8 @@ namespace WaveLib
 
 		public static class Stencil
 		{
-			public static readonly (int, int)[] Plus = [(1, 0), (0, 1), (-1, 0), (0, -1)];
-			public static readonly (int, int)[] Full = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
+			public static readonly GridOffset[] Plus = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+			public static readonly GridOffset[] Full = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
 		}
 	}
 }

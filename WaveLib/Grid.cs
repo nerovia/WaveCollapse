@@ -60,7 +60,15 @@ namespace WaveLib
 
 		public static IEnumerable<GridPosition<T>> TraverseRange<T>(this IGrid<T> self, GridRange range) => new GridTraversal<T>(self, range);
 
-		public static IEnumerable<GridPosition<T>> TraverseOffsets<T>(this IGrid<T> self, int x, int y, IEnumerable<(int x, int y)> offsets) => new GridOffsetTraversal<T>(self, x, y, offsets);
+		public static IEnumerable<(GridOffset, GridPosition<T>)> TraverseOffsets<T>(this IGrid<T> self, int x, int y, IEnumerable<GridOffset> offsets) => new GridOffsetTraversal<T>(self, x, y, offsets);
+	}
+
+	public record struct GridOffset(int X, int Y)
+	{
+		public static implicit operator GridOffset((int x, int y) delta)
+		{
+			return new GridOffset(delta.x, delta.y);
+		}
 	}
 
 	public record struct GridRange(Range RangeX, Range RangeY)
@@ -128,23 +136,23 @@ namespace WaveLib
 		}
 	}
 
-	class GridOffsetTraversal<T>(IGrid<T> grid, int x, int y, IEnumerable<(int dx, int dy)> offsets) : IEnumerable<GridPosition<T>>
+	class GridOffsetTraversal<T>(IGrid<T> grid, int x, int y, IEnumerable<GridOffset> offsets) : IEnumerable<(GridOffset, GridPosition<T>)>
 	{
-		public IEnumerator<GridPosition<T>> GetEnumerator() => new GridOffsetTraverser<T>(grid, x, y, offsets);
+		public IEnumerator<(GridOffset, GridPosition<T>)> GetEnumerator() => new GridOffsetTraverser<T>(grid, x, y, offsets);
 
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
-	class GridOffsetTraverser<T>(IGrid<T> grid, int x, int y, IEnumerable<(int dx, int dy)> offsets) : IEnumerator<GridPosition<T>>
+	class GridOffsetTraverser<T>(IGrid<T> grid, int x, int y, IEnumerable<GridOffset> offsets) : IEnumerator<(GridOffset, GridPosition<T>)>
 	{
-		readonly IEnumerator<(int dx, int dy)> offsetEnumerator = offsets.GetEnumerator();
+		readonly IEnumerator<GridOffset> offsetEnumerator = offsets.GetEnumerator();
 
-		int dx => offsetEnumerator.Current.dx;
-		int dy => offsetEnumerator.Current.dy;
+		int dx => offsetEnumerator.Current.X;
+		int dy => offsetEnumerator.Current.Y;
 		int i => x + dx;
 		int j => y + dy;
 
-		public GridPosition<T> Current => new(dx, dy, grid[i, j]);
+		public (GridOffset, GridPosition<T>) Current => new(new(dx, dy), grid.At(i, j));
 
 		object IEnumerator.Current => Current;
 
