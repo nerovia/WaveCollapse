@@ -5,7 +5,7 @@ var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black]).ToArra
 
 var grid = await GridReader.Read(File.OpenRead(args[0]));
 var (schema, tileSet) = WaveSchema.Analyze(grid, WaveSchema.Stencil.Plus);
-var synthesizer = new WaveSynthesizer(Console.BufferWidth, Console.BufferHeight, schema, random);
+var synthesizer = new WaveSynthesizer(Console.WindowWidth, Console.WindowHeight, schema, random);
 
 Console.WriteLine("RULES");
 foreach (var pattern in schema.Patterns)
