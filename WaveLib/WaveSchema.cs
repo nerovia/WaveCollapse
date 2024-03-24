@@ -55,7 +55,7 @@ namespace WaveLib
 				{
 					var subId = GetTileId(sub);
 					var objId = GetTileId(obj);
-					schema.With(subId, objId, dx, dy);
+					schema.Add(subId, objId, dx, dy);
 				}
 			}
 
