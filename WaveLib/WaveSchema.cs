@@ -10,13 +10,9 @@ namespace WaveLib
 {
 	public class WaveSchema
 	{
-		readonly HashSet<int> tileIds = [];
-		readonly HashSet<Pattern> patterns = [];
-		readonly List<(int, int)> offsets = [];
-
-		public IReadOnlySet<int> TileIds { get => tileIds; }
-		public IReadOnlySet<Pattern> Patterns { get => patterns; }
-		public IReadOnlyList<(int, int)> Offsets { get => offsets; }
+		public readonly HashSet<int> TileIds = [];
+		public readonly HashSet<Pattern> Patterns = [];
+		public readonly List<(int, int)> Offsets = [];
 
 		public WaveSchema With(int subId, int objId, int dx, int dy)
 		{
@@ -27,10 +23,10 @@ namespace WaveLib
 
 		bool Add(int subId, int objId, int dx, int dy)
 		{
-			if (patterns.Add(new(subId, objId, dx, dy)))
+			if (Patterns.Add(new(subId, objId, dx, dy)))
 			{
-				tileIds.Add(subId);
-				offsets.Add((dx, dy));
+				TileIds.Add(subId);
+				Offsets.Add((dx, dy));
 				return true;
 			}
 			return false;
