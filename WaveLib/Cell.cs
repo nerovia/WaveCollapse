@@ -2,10 +2,10 @@
 {
 	public class Cell
 	{
-		ISet<int> SuperState { get; } = new HashSet<int>();
+		HashSet<int> SuperState { get; } = [];
 
-		public int StateId { get; private set; } = -1;
-		public bool IsCollapsed { get => StateId != -1; }
+		public int TileId { get; private set; } = -1;
+		public bool IsCollapsed { get => TileId != -1; }
 		public bool IsExhausted { get => SuperState.Count == 0; }
 		public int Entropy { get => SuperState.Count; }
 
@@ -17,14 +17,14 @@
 
 		public int Collapse(Random random, Func<int, int> weightSelector)
 		{
-			StateId = SuperState.ElementAtRandom(random, weightSelector);
+			TileId = SuperState.ElementAtRandom(random, weightSelector);
 			SuperState.Clear();
-			return StateId;
+			return TileId;
 		}
 
 		public void Reset(IEnumerable<int> tiles)
 		{
-			StateId = -1;
+			TileId = -1;
 			SuperState.Clear();
 			SuperState.UnionWith(tiles);
 		}

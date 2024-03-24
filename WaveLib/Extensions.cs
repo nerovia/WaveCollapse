@@ -26,7 +26,7 @@ namespace WaveLib
 
 		public static string JoinToString<T>(this IEnumerable<T> sequence, string separator)
 		{
-			return JoinToString(sequence, separator, it => it.ToString());
+			return JoinToString(sequence, separator, it => it?.ToString() ?? "");
 		}
 
 		public static string JoinToString<T>(this IEnumerable<T> sequence, string separator, Func<T, string> stringSelector)

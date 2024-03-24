@@ -5,8 +5,8 @@ var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black]).ToArra
 
 var cells = new char[5, 5] // [height, width]
 {
-	{ '#', '#', '#', '#', '#' },
-	{ '#', '+', '+', '+', '#' },
+	{ '#', '#', '+', '#', '#' },
+	{ '#', '+', '.', '+', '#' },
 	{ '#', '+', '.', '+', '#' },
 	{ '#', '+', '+', '+', '#' },
 	{ '#', '#', '#', '#', '#' }
@@ -35,9 +35,9 @@ while (true)
 		foreach (var (x, y, cell) in synthesizer.Changes)
 		{
 			Console.SetCursorPosition(x, y);
-			Console.ForegroundColor = cell.IsCollapsed ? palette[cell.StateId] : palette[^cell.Entropy];
+			Console.ForegroundColor = cell.IsCollapsed ? palette[cell.TileId] : (cell.IsExhausted ? ConsoleColor.Black : palette[^cell.Entropy]);
 			Console.BackgroundColor = cell.IsCollapsed ? Console.ForegroundColor : ConsoleColor.Black;
-			Console.Write(cell.IsCollapsed ? tileSet[cell.StateId] : (char)('0' + cell.Entropy));
+			Console.Write(cell.IsCollapsed ? tileSet[cell.TileId] : (char)('0' + cell.Entropy));
 		}
 		Console.ForegroundColor = foreground;
 		Console.BackgroundColor = background;

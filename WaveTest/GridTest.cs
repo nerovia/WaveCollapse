@@ -54,7 +54,7 @@ namespace WaveTest
 			TestContext.WriteLine($"[ {string.Join(", ", intersect)} ]");
 			TestContext.WriteLine("");
 
-			return intersect.Count() == 0;
+			return !intersect.Any();
 		}
 
 	}

@@ -12,7 +12,7 @@ using WaveLib;
 
 namespace SadWave.Scenes
 {
-	internal class RootScreen : ControlsConsole
+	internal partial class RootScreen : ControlsConsole
 	{
 		readonly DrawingArea canvas;
 		readonly WaveSynthesizer synthesizer;
@@ -60,7 +60,7 @@ namespace SadWave.Scenes
 			var space1 = new Point(2, 1);
 			var space2 = space1 * 2;
 			var bounds = Surface.Bounds().Expand(-space2.X, -space2.Y);
-			
+
 			canvas = new(bounds.Width * 2 / 3, bounds.Height) { Position = space2 };
 			Controls.Add(canvas);
 
@@ -92,7 +92,7 @@ namespace SadWave.Scenes
 				list.Items.Add(pattern);
 		}
 
-		async void Click(object? sender, EventArgs e)
+		void Click(object? sender, EventArgs e)
 		{
 			if (generatorCancellationSource != null)
 			{
@@ -131,18 +131,18 @@ namespace SadWave.Scenes
 			foreach (var (x, y, cell) in synthesizer.Changes)
 			{
 				var coloredGlyph = canvas.Surface[x, y];
-				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.StateId] : (char)(cell.Entropy + '0');
+				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
 				//coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.StateId] : Color.Transparent;
-				coloredGlyph.Foreground = palette[cell.IsCollapsed ? cell.StateId : ^(cell.Entropy % palette.Length)];
+				coloredGlyph.Foreground = palette[cell.IsCollapsed ? cell.TileId : ^(cell.Entropy % palette.Length)];
 			}
 			canvas.IsDirty = true;
 		}
 
 		ColoredString PatternString(Pattern pattern)
 		{
-			var str = Regex.Replace(pattern.ToString(), @"#(-?\d+)", match =>
+			var str = PatternRegex().Replace(pattern.ToString(), match =>
 			{
-				var idx = int.Parse(match.Value.Substring(1));
+				var idx = int.Parse(match.Value[1..]);
 				var col = palette[idx];
 				return $"[c:r f:{col.R},{col.G},{col.B}:{match.Value.Length}]{match.Value}";
 			});
@@ -150,5 +150,7 @@ namespace SadWave.Scenes
 			return ColoredString.Parser.Parse(str);
 		}
 
+		[GeneratedRegex(@"#(-?\d+)")]
+		private static partial Regex PatternRegex();
 	}
 }

@@ -65,7 +65,7 @@ namespace WaveLib
 
 	public record struct GridRange(Range RangeX, Range RangeY)
 	{
-		public static GridRange All => new GridRange(Range.All, Range.All);
+		public static GridRange All => new(Range.All, Range.All);
 
 		public static GridRange FromRadius(int x, int y, int r)
 		{
@@ -76,7 +76,7 @@ namespace WaveLib
 			return new GridRange(x0..xn, y0..yn);
 		}
 	
-		public (int x0, int xn, int y0, int yn) GetIndices(int width, int height)
+		public readonly (int x0, int xn, int y0, int yn) GetIndices(int width, int height)
 		{
 			var x0 = RangeX.Start.GetOffset(width);
 			var xn = RangeX.End.GetOffset(width);
@@ -137,7 +137,7 @@ namespace WaveLib
 
 	class GridOffsetTraverser<T>(IGrid<T> grid, int x, int y, IEnumerable<(int dx, int dy)> offsets) : IEnumerator<GridPosition<T>>
 	{
-		IEnumerator<(int dx, int dy)> offsetEnumerator = offsets.GetEnumerator();
+		readonly IEnumerator<(int dx, int dy)> offsetEnumerator = offsets.GetEnumerator();
 
 		int dx => offsetEnumerator.Current.dx;
 		int dy => offsetEnumerator.Current.dy;

@@ -67,7 +67,7 @@ namespace WaveLib
 			foreach (var item in items)
 			{
 				if (item < MinValue || item >= MaxValue)
-					throw new ArgumentOutOfRangeException();
+					throw new ArgumentOutOfRangeException(nameof(items));
 				map |= (1u << item);
 			}
 		}
@@ -92,7 +92,7 @@ namespace WaveLib
 		public bool Contains(int item)
 		{
 			if (item < MinValue || item >= MaxValue)
-				throw new ArgumentOutOfRangeException();
+				throw new ArgumentOutOfRangeException(nameof(item));
 			return 0u != (map & (1u << item));
 		}
 

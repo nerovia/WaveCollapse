@@ -8,9 +8,9 @@ namespace WaveLib
 {
 	public class WaveSynthesizer(int width, int height, WaveSchema schema, Random random)
 	{
-		Func<int, int> weightSelector = id => 1;
+		readonly Func<int, int> weightSelector = id => 1;
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
-		public List<GridPosition<Cell>> Changes { get; } = new();
+		public List<GridPosition<Cell>> Changes { get; } = [];
 
 		public void Reset()
 		{
@@ -26,15 +26,15 @@ namespace WaveLib
 				.GroupBy(it => it.Item.Entropy)
 				.OrderBy(it => it.Key);
 
-			if (priority.Count() == 0)
-			{
-				pos = default;
-				return false;
-			}
-			else
+			if (priority.Any())
 			{
 				pos = priority.First().ElementAtRandom(random);
 				return true;
+			}
+			else
+			{
+				pos = default;
+				return false;
 			}
 		}
 

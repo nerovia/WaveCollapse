@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,9 +10,13 @@ namespace WaveLib
 {
 	public class WaveSchema
 	{
-		public ISet<int> TileIds { get; } = new HashSet<int>();
-		public ISet<Pattern> Patterns { get; } = new HashSet<Pattern>();
-		public ICollection<(int, int)> Offsets { get; } = new List<(int, int)>();
+		readonly HashSet<int> tileIds = [];
+		readonly HashSet<Pattern> patterns = [];
+		readonly List<(int, int)> offsets = [];
+
+		public IReadOnlySet<int> TileIds { get => tileIds; }
+		public IReadOnlySet<Pattern> Patterns { get => patterns; }
+		public IReadOnlyList<(int, int)> Offsets { get => offsets; }
 
 		public WaveSchema With(int subId, int objId, int dx, int dy)
 		{
@@ -22,10 +27,10 @@ namespace WaveLib
 
 		bool Add(int subId, int objId, int dx, int dy)
 		{
-			if (Patterns.Add(new(subId, objId, dx, dy)))
+			if (patterns.Add(new(subId, objId, dx, dy)))
 			{
-				TileIds.Add(subId);
-				Offsets.Add((dx, dy));
+				tileIds.Add(subId);
+				offsets.Add((dx, dy));
 				return true;
 			}
 			return false;
@@ -58,13 +63,13 @@ namespace WaveLib
 				}
 			}
 
-			return new(schema, tileSet.ToArray());
+			return new(schema, [.. tileSet]);
 		}
 
 		public static class Stencil
 		{
-			public static (int, int)[] Plus = [(1, 0), (0, 1), (-1, 0), (0, -1)];
-			public static (int, int)[] Full = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
+			public static readonly (int, int)[] Plus = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+			public static readonly (int, int)[] Full = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
 		}
 	}
 }
