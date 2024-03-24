@@ -3,16 +3,8 @@
 var random = new Random(Environment.TickCount);
 var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black]).ToArray();
 
-var cells = new char[5, 5] // [height, width]
-{
-	{ '#', '#', '+', '#', '#' },
-	{ '#', '+', '.', '+', '#' },
-	{ '#', '+', '.', '+', '#' },
-	{ '#', '+', '+', '+', '#' },
-	{ '#', '#', '#', '#', '#' }
-};
-
-var (schema, tileSet) = WaveSchema.Analyze(Grid.From(cells), WaveSchema.Stencil.Plus);
+var grid = await GridReader.Read(File.OpenRead(args[0]));
+var (schema, tileSet) = WaveSchema.Analyze(grid, WaveSchema.Stencil.Plus);
 var synthesizer = new WaveSynthesizer(Console.BufferWidth, Console.BufferHeight, schema, random);
 
 Console.WriteLine("RULES");

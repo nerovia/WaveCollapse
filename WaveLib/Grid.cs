@@ -166,4 +166,30 @@ namespace WaveLib
 			offsetEnumerator.Reset();
 		}
 	}
+
+	public static class GridReader
+	{
+		public static async Task<IGrid<char>> Read(Stream stream)
+		{
+			// Read all lines, trim, skip empty
+			var lines = new List<string>();
+			using (var reader = new StreamReader(stream))
+			{
+				while (true)
+				{
+					var line = await reader.ReadLineAsync();
+					if (line == null)
+						break;
+					var str = line.Trim();
+					if (string.IsNullOrEmpty(str))
+						continue;
+					lines.Add(str);
+				}
+			}
+
+			var width = lines.Min(s => s.Length);
+			var height = lines.Count;
+			return Grid.Create<char>(width, height, pos => lines[pos.Y][pos.X]);
+		}
+	}
 }

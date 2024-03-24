@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WaveDemo": {
+      "commandName": "Project",
+      "commandLineArgs": "../../../../data/pattern1.txt\""
+    }
+  }
+}

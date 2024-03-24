@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SadWave": {
+      "commandName": "Project",
+      "commandLineArgs": "../../../../data/pattern2.txt"
+    }
+  }
+}

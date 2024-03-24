@@ -55,7 +55,7 @@ namespace SadWave.Scenes
 		Task? generatorTask;
 		CancellationTokenSource? generatorCancellationSource;
 
-		public RootScreen() : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
+		public RootScreen(IGrid<char> grid) : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
 		{
 			var space1 = new Point(2, 1);
 			var space2 = space1 * 2;
@@ -71,21 +71,11 @@ namespace SadWave.Scenes
 
 			var list = new ListBox(bounds.Width - canvas.Width - space1.X, bounds.Height - 2);
 			list.PlaceRelativeTo(button, Direction.Types.Down, space1.Y);
-			list.IsEnabled = false;
 			Controls.Add(list);
 
 			Surface.DrawBox(canvas.Bounds.Expand(space1.X, space1.Y), ShapeParameters.CreateStyledBoxThick(Color.White));
 
-			var cells = new char[5, 5] // [height, width]
-			{
-				{ '#', '#', '#', '#', '#' },
-				{ '#', '+', '+', '+', '#' },
-				{ '#', '+', '.', '+', '#' },
-				{ '#', '+', '+', '+', '#' },
-				{ '#', '#', '#', '#', '#' }
-			};
-
-			(schema, tileSet) = WaveSchema.Analyze(Grid.From(cells), WaveSchema.Stencil.Plus);
+			(schema, tileSet) = WaveSchema.Analyze(grid, WaveSchema.Stencil.Plus);
 			synthesizer = new WaveSynthesizer(canvas.Width, canvas.Height, schema, new Random(Environment.TickCount));
 
 			foreach (var pattern in schema.Patterns.Select(PatternString))
@@ -133,7 +123,8 @@ namespace SadWave.Scenes
 				var coloredGlyph = canvas.Surface[x, y];
 				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
 				//coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.StateId] : Color.Transparent;
-				coloredGlyph.Foreground = palette[cell.IsCollapsed ? cell.TileId : ^(cell.Entropy % palette.Length)];
+				coloredGlyph.Foreground = cell.IsCollapsed ? Color.Black : palette[^cell.Entropy];
+				coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
 			}
 			canvas.IsDirty = true;
 		}
