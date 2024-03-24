@@ -8,14 +8,17 @@ namespace WaveLib
 {
 	public class WaveSynthesizer(int width, int height, WaveSchema schema, Random random)
 	{
-		readonly Func<int, int> weightSelector = id => 1;
+		public readonly WaveSchema Schema = schema;
+		public readonly Random Random = random;
+		public readonly Func<int, int> WeightSelector = id => 1;
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
 		public List<GridPosition<Cell>> Changes { get; } = [];
 
 		public void Reset()
 		{
+			Changes.Clear();
 			foreach (var cell in Grid)
-				cell.Reset(schema.TileIds);
+				cell.Reset(Schema.TileIds);
 		}
 		
 		public bool TryNextCell(out GridPosition<Cell> pos)
@@ -28,7 +31,7 @@ namespace WaveLib
 
 			if (priority.Any())
 			{
-				pos = priority.First().ElementAtRandom(random);
+				pos = priority.First().ElementAtRandom(Random);
 				return true;
 			}
 			else
@@ -40,7 +43,7 @@ namespace WaveLib
 
 		void Propagate(int sub, int x, int y)
 		{
-			var neighbours = Grid.TraverseOffsets(x, y, schema.Offsets);
+			var neighbours = Grid.TraverseOffsets(x, y, Schema.Offsets);
 
 			foreach (var ((dx, dy), pos) in neighbours)
 			{
@@ -49,15 +52,21 @@ namespace WaveLib
 			}
 		}
 
+		public void Collapse(int x, int y) => Collapse(Grid.At(x, y));
+
+		void Collapse(GridPosition<Cell> pos)
+		{
+			Changes.Add(pos);
+			var state = pos.Item.Collapse(Random, WeightSelector);
+			Propagate(state, pos.X, pos.Y);
+		}
+
 		public bool CollapseNext()
 		{
 			if (TryNextCell(out var pos))
 			{
 				Changes.Clear();
-				Changes.Add(pos);
-				var (x, y, cell) = pos;
-				var state = cell.Collapse(random, weightSelector);
-				Propagate(state, x, y);
+				Collapse(pos);
 				return true;
 			}
 			return false;
@@ -65,7 +74,7 @@ namespace WaveLib
 
 		IEnumerable<int> RemainingPatterns(int subId, int dx, int dy)
 		{
-			var remaining = schema.Patterns
+			var remaining = Schema.Patterns
 				.Where(it => it.Satisfies(subId, dx, dy))
 				.Select(it => it.ObjectId);
 			return remaining;

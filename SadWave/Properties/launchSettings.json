@@ -2,7 +2,7 @@
   "profiles": {
     "SadWave": {
       "commandName": "Project",
-      "commandLineArgs": "../../../../data/pattern2.txt"
+      "commandLineArgs": "../../../../data/line.schema"
     }
   }
 }

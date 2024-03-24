@@ -1,6 +1,7 @@
 ﻿using SadConsole.UI;
 using SadConsole.UI.Controls;
 using SadRogue.Primitives.GridViews;
+using System;
 using System.Text.RegularExpressions;
 using WaveLib;
 
@@ -49,8 +50,11 @@ namespace SadWave.Scenes
 		Task? generatorTask;
 		CancellationTokenSource? generatorCancellationSource;
 
-		public RootScreen(IGrid<char> grid) : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
+		public RootScreen(WaveSchema schema, char[] tileSet) : base(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT)
 		{
+			this.schema = schema;
+			this.tileSet = tileSet;
+
 			var space1 = new Point(2, 1);
 			var space2 = space1 * 2;
 			var bounds = Surface.Bounds().Expand(-space2.X, -space2.Y);
@@ -68,11 +72,9 @@ namespace SadWave.Scenes
 			Controls.Add(list);
 
 			Surface.DrawBox(canvas.Bounds.Expand(space1.X, space1.Y), ShapeParameters.CreateStyledBoxThick(Color.White));
-
-			(schema, tileSet) = WaveSchema.Analyze(grid, WaveSchema.Stencil.Plus);
 			synthesizer = new WaveSynthesizer(canvas.Width, canvas.Height, schema, new Random(Environment.TickCount));
 
-			foreach (var pattern in schema.Patterns.Select(PatternString))
+			foreach (var pattern in schema.Patterns.Order().Select(PatternString))
 				list.Items.Add(pattern);
 		}
 
@@ -93,6 +95,14 @@ namespace SadWave.Scenes
 		{
 			synthesizer.Reset();
 			canvas.Surface.Clear();
+
+			//for (int i = 0; i < 5; ++i)
+			//	synthesizer.Collapse(
+			//		synthesizer.Random.Next(0, synthesizer.Grid.Width),
+			//		synthesizer.Random.Next(0, synthesizer.Grid.Height));
+			//DrawCanvas(synthesizer.Changes);
+			//await Task.Delay(500);
+
 			await Task.Yield();
 			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext())
 			{
@@ -115,8 +125,9 @@ namespace SadWave.Scenes
 			{
 				var coloredGlyph = canvas.Surface[x, y];
 				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
-				coloredGlyph.Foreground = cell.IsCollapsed ? Color.Black : palette[^cell.Entropy];
-				coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
+				coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.TileId] : palette[^cell.Entropy];
+				//coloredGlyph.Foreground = cell.IsCollapsed ? Color.White : palette[^cell.Entropy];
+				//coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
 			}
 			canvas.IsDirty = true;
 		}
