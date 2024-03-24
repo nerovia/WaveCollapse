@@ -125,7 +125,7 @@ namespace SadWave.Scenes
 			{
 				var coloredGlyph = canvas.Surface[x, y];
 				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
-				coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.TileId] : palette[^cell.Entropy];
+				coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.TileId] : (cell.IsExhausted ? Color.Black : palette[^cell.Entropy]);
 				//coloredGlyph.Foreground = cell.IsCollapsed ? Color.White : palette[^cell.Entropy];
 				//coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
 			}
