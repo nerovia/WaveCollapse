@@ -1,7 +1,6 @@
 ﻿using SadConsole.UI;
 using SadConsole.UI.Controls;
 using SadRogue.Primitives.GridViews;
-using System;
 using System.Text.RegularExpressions;
 using WaveLib;
 
@@ -74,8 +73,8 @@ namespace SadWave.Scenes
 			Surface.DrawBox(canvas.Bounds.Expand(space1.X, space1.Y), ShapeParameters.CreateStyledBoxThick(Color.White));
 			synthesizer = new WaveSynthesizer(canvas.Width, canvas.Height, schema, new Random(Environment.TickCount));
 
-			foreach (var pattern in schema.Patterns.Order().Select(PatternString))
-				list.Items.Add(pattern);
+			foreach (var constraint in schema.Order().Select(ConstraintString))
+				list.Items.Add(constraint);
 		}
 
 		void Click(object? sender, EventArgs e)
@@ -95,18 +94,13 @@ namespace SadWave.Scenes
 		{
 			synthesizer.Reset();
 			canvas.Surface.Clear();
-
-			//for (int i = 0; i < 5; ++i)
-			//	synthesizer.Collapse(
-			//		synthesizer.Random.Next(0, synthesizer.Grid.Width),
-			//		synthesizer.Random.Next(0, synthesizer.Grid.Height));
-			//DrawCanvas(synthesizer.Changes);
-			//await Task.Delay(500);
+			var changes = new List<GridPosition<Cell>>();
 
 			await Task.Yield();
-			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext())
+			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext(changes))
 			{
-				DrawCanvas(synthesizer.Changes);
+				DrawCanvas(changes);
+				changes.Clear();
 			}
 		}
 
@@ -124,17 +118,26 @@ namespace SadWave.Scenes
 			foreach (var (x, y, cell) in changes)
 			{
 				var coloredGlyph = canvas.Surface[x, y];
-				coloredGlyph.Glyph = cell.IsCollapsed ? tileSet[cell.TileId] : (char)(cell.Entropy + '0');
-				coloredGlyph.Foreground = cell.IsCollapsed ? palette[cell.TileId] : (cell.IsExhausted ? Color.Black : palette[^cell.Entropy]);
+				coloredGlyph.Glyph = cell.State switch
+				{
+					CellState.Collapsed => tileSet[cell.Position],
+					_ => (char)(cell.SuperPosition.Count + '0')
+				};
+				coloredGlyph.Foreground = cell.State switch
+				{
+					CellState.Collapsed => palette[cell.Position],
+					CellState.SuperPosition => palette[^cell.SuperPosition.Count],
+					_ => Color.Black
+				};
 				//coloredGlyph.Foreground = cell.IsCollapsed ? Color.White : palette[^cell.Entropy];
 				//coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
 			}
 			canvas.IsDirty = true;
 		}
 
-		ColoredString PatternString(Pattern pattern)
+		ColoredString ConstraintString(Constraint constraint)
 		{
-			var str = PatternRegex().Replace(pattern.ToString(), match =>
+			var str = ConstraintRegex().Replace(constraint.ToString(), match =>
 			{
 				var idx = int.Parse(match.Value[1..]);
 				var col = palette[idx];
@@ -145,6 +148,6 @@ namespace SadWave.Scenes
 		}
 
 		[GeneratedRegex(@"#(-?\d+)")]
-		private static partial Regex PatternRegex();
+		private static partial Regex ConstraintRegex();
 	}
 }

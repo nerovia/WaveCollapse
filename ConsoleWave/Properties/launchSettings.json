@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "WaveDemo": {
+    "ConsoleWave": {
       "commandName": "Project",
-      "commandLineArgs": "../../../../data/line.schema"
+      "commandLineArgs": "../../../../data/pattern2.txt"
     }
   }
 }

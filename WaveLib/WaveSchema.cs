@@ -1,73 +1,41 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections;
 using System.Diagnostics;
-using System.Formats.Tar;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace WaveLib
 {
-	public class WaveSchema
+	public class WaveSchema : IEnumerable<Constraint>
 	{
-		public readonly HashSet<int> TileIds = [];
-		public readonly HashSet<Pattern> Patterns = [];
-		public readonly List<GridOffset> Offsets = [];
+		readonly HashSet<Constraint> constraints = [];
 
-		public WaveSchema With(int subId, int objId, int dx, int dy)
-		{
-			if (Add(subId, objId, dx, dy))
-				Add(objId, subId, -dx, -dy);
-			return this;
-		}
+		public IEnumerator<Constraint> GetEnumerator() => constraints.GetEnumerator();
 
-		bool Add(int subId, int objId, int dx, int dy)
+		IEnumerator IEnumerable.GetEnumerator() => constraints.GetEnumerator();
+
+		public bool Add(int subId, int objId, GridOffset delta)
 		{
-			if (Patterns.Add(new(subId, objId, dx, dy)))
+			if (constraints.Add(new(subId, objId, delta)))
 			{
-				TileIds.Add(subId);
-				Offsets.Add(new(dx, dy));
-				return true;
+				constraints.Add(new(objId, subId, -delta));
+				return false;
 			}
 			return false;
 		}
 
-		public class TileSetBuilder<T>
-		{
-			readonly List<T> tileSet = new();
-			readonly Dictionary<T, int> reverse = new();
-
-			public int Add(T tile)
-			{
-				if (!reverse.TryGetValue(tile, out var tileId))
-				{
-					tileId = tileSet.Count;
-					reverse.Add(tile, tileId);
-					tileSet.Add(tile);
-				}
-				return tileId;
-			}
-
-			public T[] Build() => tileSet.ToArray();
-		}
-
-		public static (WaveSchema, T[]) Analyze<T>(IGrid<T> grid, IEnumerable<GridOffset> offsets) where T : notnull
+		public static (WaveSchema, T[]) Analyze<T>(IGrid<T> grid, IEnumerable<GridOffset> stencil) where T : notnull
 		{
 			var schema = new WaveSchema();
 			var tileSet = new TileSetBuilder<T>();
 
 			foreach (var (x, y, sub) in grid.Traverse())
 			{
-				foreach (var ((dx, dy), (_, _, obj)) in grid.TraverseOffsets(x, y, offsets))
+				foreach (var delta in stencil)
 				{
-					var subId = tileSet.Add(sub);
-					var objId = tileSet.Add(obj);
-					schema.Add(subId, objId, dx, dy);
+					if (grid.TryGet(x + delta.X, y + delta.Y, out var obj))
+					{
+						var subId = tileSet.Add(sub);
+						var objId = tileSet.Add(obj);
+						schema.constraints.Add(new(subId, objId, delta));
+					}
 				}
 			}
 
@@ -93,7 +61,7 @@ namespace WaveLib
 					{
 						Debug.WriteLine(new { c1 });
 						var cls2 = c1.Split(' ', 2);
-						GridOffset[] offsets = cls2[0] switch // Regex.Match(, @"\[(\S+?)\]").Groups[1].Value switch
+						GridOffset[] stencil = cls2[0] switch
 						{
 							"l" => [(-1, 0)],
 							"r" => [(1, 0)],
@@ -116,12 +84,12 @@ namespace WaveLib
 						foreach (var c2 in cls2[1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
 						{
 							Debug.WriteLine(new { c2 });
-							var obj = c2; //Regex.Match(c2, @"<(\S+?)>").Groups[1].Value;
+							var obj = c2;
 							var objId = tileSet.Add(obj);
 
-							foreach (var offset in offsets)
+							foreach (var delta in stencil)
 							{
-								schema.With(subId, objId, offset.X, offset.Y);
+								schema.Add(subId, objId, delta);
 							}
 						}
 					}
@@ -142,5 +110,24 @@ namespace WaveLib
 			public static readonly GridOffset[] Plus = [(1, 0), (0, 1), (-1, 0), (0, -1)];
 			public static readonly GridOffset[] Full = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
 		}
+	}
+
+	internal class TileSetBuilder<T> where T : notnull
+	{
+		readonly List<T> tileSet = [];
+		readonly Dictionary<T, int> reverse = [];
+
+		public int Add(T tile)
+		{
+			if (!reverse.TryGetValue(tile, out var tileId))
+			{
+				tileId = tileSet.Count;
+				reverse.Add(tile, tileId);
+				tileSet.Add(tile);
+			}
+			return tileId;
+		}
+
+		public T[] Build() => tileSet.ToArray();
 	}
 }

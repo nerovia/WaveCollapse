@@ -1,7 +1,4 @@
-﻿using System.Data;
-using WaveLib;
-
-namespace WaveLib
+﻿namespace WaveLib
 {
 	public static class Extensions
 	{
@@ -23,16 +20,5 @@ namespace WaveLib
 			}
 			throw new Exception();
 		}
-
-		public static string JoinToString<T>(this IEnumerable<T> sequence, string separator)
-		{
-			return JoinToString(sequence, separator, it => it?.ToString() ?? "");
-		}
-
-		public static string JoinToString<T>(this IEnumerable<T> sequence, string separator, Func<T, string> stringSelector)
-		{
-			return string.Join(separator, sequence.Select(stringSelector));
-		}
-
 	}
 }

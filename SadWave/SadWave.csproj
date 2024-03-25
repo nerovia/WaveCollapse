@@ -24,13 +24,4 @@
     <ProjectReference Include="..\WaveLib\WaveLib.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="data\pattern1.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="data\pattern2.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

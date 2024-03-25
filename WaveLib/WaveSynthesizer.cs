@@ -1,83 +1,49 @@
-﻿using System.Data;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
-using WaveLib;
-
-namespace WaveLib
+﻿namespace WaveLib
 {
 	public class WaveSynthesizer(int width, int height, WaveSchema schema, Random random)
 	{
-		public readonly WaveSchema Schema = schema;
+		readonly HashSet<int> tileIds = schema.Select(it => it.SubjectId).ToHashSet();
+		readonly IEnumerable<IGrouping<GridOffset, Constraint>> constraints = schema.GroupBy(it => it.Delta);
+		readonly Func<int, int> WeightSelector = id => 1;
+
 		public readonly Random Random = random;
-		public readonly Func<int, int> WeightSelector = id => 1;
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
-		public List<GridPosition<Cell>> Changes { get; } = [];
+				
+		IEnumerable<GridPosition<Cell>>? Priority()
+		{
+			return (from pos in Grid.Traverse()
+					where pos.Cell.State == CellState.SuperPosition
+					group pos by pos.Cell.SuperPosition.Count into prio
+					orderby prio.Key ascending select prio).FirstOrDefault();
+		}
 
 		public void Reset()
 		{
-			Changes.Clear();
 			foreach (var cell in Grid)
-				cell.Reset(Schema.TileIds);
-		}
-		
-		public bool TryNextCell(out GridPosition<Cell> pos)
-		{
-			var priority = Grid.Traverse()
-				.Where(it => !it.Item.IsCollapsed)
-				.Where(it => !it.Item.IsExhausted)
-				.GroupBy(it => it.Item.Entropy)
-				.OrderBy(it => it.Key);
-
-			if (priority.Any())
-			{
-				pos = priority.First().ElementAtRandom(Random);
-				return true;
-			}
-			else
-			{
-				pos = default;
-				return false;
-			}
+				cell.Reset(tileIds);
 		}
 
-		void Propagate(int sub, int x, int y)
+		public bool CollapseNext(ICollection<GridPosition<Cell>>? changes = null)
 		{
-			var neighbours = Grid.TraverseOffsets(x, y, Schema.Offsets);
-
-			foreach (var ((dx, dy), pos) in neighbours)
+			var next = Priority()?.ElementAtRandom(Random);
+			if (next.HasValue)
 			{
-				pos.Item.Reduce(RemainingPatterns(sub, dx, dy));
-				Changes.Add(pos);
-			}
-		}
+				var (x, y, cell) = next.Value;
+				var subId = cell.Collapse(Random, WeightSelector);
+				changes?.Add(next.Value);
 
-		public void Collapse(int x, int y) => Collapse(Grid.At(x, y));
-
-		void Collapse(GridPosition<Cell> pos)
-		{
-			Changes.Add(pos);
-			var state = pos.Item.Collapse(Random, WeightSelector);
-			Propagate(state, pos.X, pos.Y);
-		}
-
-		public bool CollapseNext()
-		{
-			if (TryNextCell(out var pos))
-			{
-				Changes.Clear();
-				Collapse(pos);
+				foreach (var grouping in constraints)
+				{
+					var delta = grouping.Key;
+					if (Grid.TryAt(x + delta.X, y + delta.Y, out var pos))
+					{
+						pos.Cell.Constrain(from constraint in grouping where constraint.SubjectId == subId select constraint.ObjectId);
+						changes?.Add(pos);
+					}
+				}
 				return true;
 			}
 			return false;
-		}
-
-		IEnumerable<int> RemainingPatterns(int subId, int dx, int dy)
-		{
-			var remaining = Schema.Patterns
-				.Where(it => it.Satisfies(subId, dx, dy))
-				.Select(it => it.ObjectId);
-			return remaining;
 		}
 	}
 }

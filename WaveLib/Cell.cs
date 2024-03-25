@@ -1,32 +1,49 @@
 ﻿namespace WaveLib
 {
+	public enum CellState
+	{
+		SuperPosition,
+		Collapsed,
+		Exhausted,
+	}
+
 	public class Cell
 	{
-		HashSet<int> SuperState { get; } = [];
+		int position = -1;
+		CellState cellState;
+		readonly HashSet<int> superPosition = [];
 
-		public int TileId { get; private set; } = -1;
-		public bool IsCollapsed { get => TileId != -1; }
-		public bool IsExhausted { get => SuperState.Count == 0; }
-		public int Entropy { get => SuperState.Count; }
+		public CellState State { get => cellState; }
+		public IReadOnlySet<int> SuperPosition { get => superPosition; }
+		public int Position { get => position; }
 
-		public bool Reduce(IEnumerable<int> tiles)
+		internal void Constrain(IEnumerable<int> superPosition)
 		{
-			SuperState.IntersectWith(tiles);
-			return IsExhausted;
+			if (cellState == CellState.SuperPosition)
+			{
+				this.superPosition.IntersectWith(superPosition);
+				if (this.superPosition.Count == 0)
+					cellState = CellState.Exhausted;
+			}
 		}
 
-		public int Collapse(Random random, Func<int, int> weightSelector)
+		internal int Collapse(Random random, Func<int, int> weightSelector)
 		{
-			TileId = SuperState.ElementAtRandom(random, weightSelector);
-			SuperState.Clear();
-			return TileId;
+			if (cellState == CellState.SuperPosition)
+			{
+				position = superPosition.ElementAtRandom(random, weightSelector);
+				superPosition.Clear();
+				cellState = CellState.Collapsed;
+			}
+			return position;
 		}
 
-		public void Reset(IEnumerable<int> tiles)
+		internal void Reset(IEnumerable<int> superPosition)
 		{
-			TileId = -1;
-			SuperState.Clear();
-			SuperState.UnionWith(tiles);
+			cellState = CellState.SuperPosition;
+			position = -1;
+			this.superPosition.Clear();
+			this.superPosition.UnionWith(superPosition);
 		}
 	}
 }

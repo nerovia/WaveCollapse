@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -8,10 +9,52 @@ using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 
 namespace WaveLib
 {
-	public record struct GridPosition<T>(int X, int Y, T Item);
+	public record struct GridPosition<T>(int X, int Y, T Cell);
+
+	public record struct GridOffset(int X, int Y) : IComparable<GridOffset>
+	{
+		public int CompareTo(GridOffset other)
+		{
+			var ret = X.CompareTo(other.X);
+			if (ret != 0)
+				return ret;
+			return Y.CompareTo(other.Y);
+		}
+
+		public static implicit operator GridOffset((int x, int y) delta)
+		{
+			return new GridOffset(delta.x, delta.y);
+		}
+
+		public static GridOffset operator -(GridOffset self) => new(-self.X, -self.Y);
+	}
+
+	public record struct GridRange(Range RangeX, Range RangeY)
+	{
+		public static GridRange All => new(Range.All, Range.All);
+
+		public static GridRange FromRadius(int x, int y, int r)
+		{
+			var x0 = Math.Max(x - r, 0);
+			var xn = x + r + 1;
+			var y0 = Math.Max(y - r, 0);
+			var yn = y + r + 1;
+			return new GridRange(x0..xn, y0..yn);
+		}
+
+		public readonly (int x0, int xn, int y0, int yn) GetIndices(int width, int height)
+		{
+			var x0 = RangeX.Start.GetOffset(width);
+			var xn = RangeX.End.GetOffset(width);
+			var y0 = RangeY.Start.GetOffset(height);
+			var yn = RangeY.End.GetOffset(height);
+			return (Math.Max(x0, 0), Math.Min(xn, width), Math.Max(y0, 0), Math.Min(yn, height));
+		}
+	}
 
 	public interface IGrid<T> : IEnumerable<T>
 	{
@@ -39,7 +82,37 @@ namespace WaveLib
 
 		public static IGrid<T> From<T>(T[,] data) => Create<T>(data.GetLength(1), data.GetLength(0)).Fill(pos => data[pos.Y, pos.X]);
 
+		public static bool Contains<T>(this IGrid<T> self, int x, int y) => x >= 0 && y >= 0 && x < self.Width && y < self.Height;
+
 		public static GridPosition<T> At<T>(this IGrid<T> self, int x, int y) => new(x, y, self[x, y]);
+	
+		public static bool TryGet<T>(this IGrid<T> self, int x, int y, [MaybeNullWhen(false)] out T value)
+		{
+			if (self.Contains(x, y))
+			{
+				value = self[x, y];
+				return true;
+			}
+			else
+			{
+				value = default;
+				return false;
+			}
+		}
+
+		public static bool TryAt<T>(this IGrid<T> self, int x, int y, out GridPosition<T> pos)
+		{
+			if (self.Contains(x, y))
+			{
+				pos = self.At(x, y);
+				return true;
+			}
+			else
+			{
+				pos = default;
+				return false;
+			}
+		}
 
 		public static IGrid<T> Fill<T>(this IGrid<T> self, T value) => self.Fill(_ => value);
 
@@ -59,39 +132,6 @@ namespace WaveLib
 		public static IEnumerable<GridPosition<T>> Traverse<T>(this IGrid<T> self) => new GridTraversal<T>(self, GridRange.All);
 
 		public static IEnumerable<GridPosition<T>> TraverseRange<T>(this IGrid<T> self, GridRange range) => new GridTraversal<T>(self, range);
-
-		public static IEnumerable<(GridOffset, GridPosition<T>)> TraverseOffsets<T>(this IGrid<T> self, int x, int y, IEnumerable<GridOffset> offsets) => new GridOffsetTraversal<T>(self, x, y, offsets);
-	}
-
-	public record struct GridOffset(int X, int Y)
-	{
-		public static implicit operator GridOffset((int x, int y) delta)
-		{
-			return new GridOffset(delta.x, delta.y);
-		}
-	}
-
-	public record struct GridRange(Range RangeX, Range RangeY)
-	{
-		public static GridRange All => new(Range.All, Range.All);
-
-		public static GridRange FromRadius(int x, int y, int r)
-		{
-			var x0 = Math.Max(x - r, 0);
-			var xn = x + r + 1;
-			var y0 = Math.Max(y - r, 0);
-			var yn = y + r + 1;
-			return new GridRange(x0..xn, y0..yn);
-		}
-	
-		public readonly (int x0, int xn, int y0, int yn) GetIndices(int width, int height)
-		{
-			var x0 = RangeX.Start.GetOffset(width);
-			var xn = RangeX.End.GetOffset(width);
-			var y0 = RangeY.Start.GetOffset(height);
-			var yn = RangeY.End.GetOffset(height);
-			return (Math.Max(x0, 0), Math.Min(xn, width), Math.Max(y0, 0), Math.Min(yn, height));
-		}
 	}
 
 	class GridTraversal<T>(IGrid<T> grid, GridRange range) : IEnumerable<GridPosition<T>>
@@ -136,50 +176,10 @@ namespace WaveLib
 		}
 	}
 
-	class GridOffsetTraversal<T>(IGrid<T> grid, int x, int y, IEnumerable<GridOffset> offsets) : IEnumerable<(GridOffset, GridPosition<T>)>
-	{
-		public IEnumerator<(GridOffset, GridPosition<T>)> GetEnumerator() => new GridOffsetTraverser<T>(grid, x, y, offsets);
-
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-	}
-
-	class GridOffsetTraverser<T>(IGrid<T> grid, int x, int y, IEnumerable<GridOffset> offsets) : IEnumerator<(GridOffset, GridPosition<T>)>
-	{
-		readonly IEnumerator<GridOffset> offsetEnumerator = offsets.GetEnumerator();
-
-		int dx => offsetEnumerator.Current.X;
-		int dy => offsetEnumerator.Current.Y;
-		int i => x + dx;
-		int j => y + dy;
-
-		public (GridOffset, GridPosition<T>) Current => new(new(dx, dy), grid.At(i, j));
-
-		object IEnumerator.Current => Current;
-
-		public void Dispose() { }
-
-		public bool MoveNext()
-		{
-			do
-			{
-				if (!offsetEnumerator.MoveNext())
-					return false;
-			} 
-			while (i < 0 || j < 0 || i >= grid.Width || j >= grid.Height);
-			return true;
-		}
-
-		public void Reset()
-		{
-			offsetEnumerator.Reset();
-		}
-	}
-
 	public static class GridReader
 	{
 		public static async Task<IGrid<char>> Read(Stream stream)
 		{
-			// Read all lines, trim, skip empty
 			var lines = new List<string>();
 			using (var reader = new StreamReader(stream))
 			{
