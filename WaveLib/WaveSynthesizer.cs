@@ -13,8 +13,7 @@
 		{
 			return (from pos in Grid.Traverse()
 					where pos.Cell.State == CellState.SuperPosition
-					group pos by pos.Cell.SuperPosition.Count into prio
-					orderby prio.Key ascending select prio).FirstOrDefault();
+					group pos by pos.Cell.SuperPosition.Count).MinBy(it => it.Key);
 		}
 
 		public void Reset()
