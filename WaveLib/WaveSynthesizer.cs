@@ -11,9 +11,11 @@
 				
 		IEnumerable<GridPosition<Cell>>? Priority()
 		{
-			return (from pos in Grid.Traverse()
-					where pos.Cell.State == CellState.SuperPosition
-					group pos by pos.Cell.SuperPosition.Count).MinBy(it => it.Key);
+			var min = (from cell in Grid where cell.State == CellState.SuperPosition select (int?)cell.SuperPosition.Count).Min();
+			return min.HasValue ? from pos in Grid.Traverse()
+				   where pos.Cell.State == CellState.SuperPosition
+				   where pos.Cell.SuperPosition.Count == min
+				   select pos : null;
 		}
 
 		public void Reset()
