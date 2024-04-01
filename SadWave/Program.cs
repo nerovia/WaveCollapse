@@ -1,6 +1,7 @@
 ﻿using SadConsole.Configuration;
 using SadWave.Scenes;
 using WaveLib;
+using WaveLib.Parser;
 
 var (schema, tileSet) = await ReadSchema(args[0]);
 
@@ -28,6 +29,8 @@ async Task<(WaveSchema, char[])> ReadSchema(string path)
 		case ".schema":
 			var (schema, tileSet) = WaveSchema.Parse(file);
 			return (schema, tileSet.Select(s => Substitute(s.First())).ToArray());
+		case ".rulz":
+			return WaveRulz.Parse(file);
 	}
 	throw new Exception();
 }

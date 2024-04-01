@@ -1,0 +1,33 @@
+﻿<!-- Template generated code from Antlr4BuildTasks.Template v 8.17 -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AntlrTemplate</RootNamespace>
+  </PropertyGroup>
+  
+  <ItemGroup>
+	  <Antlr4 Include="WaveRulzLexer.lex">
+		  <Package>WaveParser</Package>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Antlr4>
+    <Antlr4 Include="WaveRulzParser.g4">
+      <Package>WaveParser</Package>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Antlr4>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.3" />
+    <PackageReference Include="Antlr4BuildTasks" Version="8.17" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WaveLib\WaveLib.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>3021;1701;1702</NoWarn>
+  </PropertyGroup>
+
+</Project>

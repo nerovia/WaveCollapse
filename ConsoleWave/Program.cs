@@ -1,4 +1,5 @@
 ﻿using WaveLib;
+using WaveLib.Parser;
 
 Console.ForegroundColor = ConsoleColor.White;
 Console.BackgroundColor = ConsoleColor.Black;
@@ -68,6 +69,8 @@ async Task<(WaveSchema, char[])> ReadSchema(string path)
 		case ".schema":
 			var (schema, tileSet) = WaveSchema.Parse(file);
 			return (schema, tileSet.Select(s => s.First()).ToArray());
+		case ".rulz":
+			return WaveRulz.Parse(file);
 	}
 	throw new Exception();
 }

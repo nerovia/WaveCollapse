@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WaveLib.Parser\WaveLib.Parser.csproj" />
     <ProjectReference Include="..\WaveLib\WaveLib.csproj" />
   </ItemGroup>
 

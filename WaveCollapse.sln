@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleWave", "ConsoleWave\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SadWave", "SadWave\SadWave.csproj", "{18D35E6D-56CD-42C4-BF2F-D23B1099FE18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveTest", "WaveTest\WaveTest.csproj", "{49652317-867C-4DB1-BD91-B71D6A8CE763}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaveTest", "WaveTest\WaveTest.csproj", "{49652317-867C-4DB1-BD91-B71D6A8CE763}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaveLib.Parser", "WaveLib.Parser\WaveLib.Parser.csproj", "{4F713DEA-3069-4E19-871D-7EB67489B82B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{49652317-867C-4DB1-BD91-B71D6A8CE763}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49652317-867C-4DB1-BD91-B71D6A8CE763}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49652317-867C-4DB1-BD91-B71D6A8CE763}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F713DEA-3069-4E19-871D-7EB67489B82B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F713DEA-3069-4E19-871D-7EB67489B82B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F713DEA-3069-4E19-871D-7EB67489B82B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F713DEA-3069-4E19-871D-7EB67489B82B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

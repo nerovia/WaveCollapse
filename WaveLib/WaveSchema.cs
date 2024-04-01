@@ -43,7 +43,10 @@ namespace WaveLib
 		}
 
 		public static (WaveSchema, string[]) Parse(Stream stream)
-		{
+		{	
+			
+
+
 			using var reader = new StreamReader(stream);
 			var tileSet = new TileSetBuilder<string>();
 			var schema = new WaveSchema();
@@ -112,7 +115,7 @@ namespace WaveLib
 		}
 	}
 
-	internal class TileSetBuilder<T> where T : notnull
+	public class TileSetBuilder<T> where T : notnull
 	{
 		readonly List<T> tileSet = [];
 		readonly Dictionary<T, int> reverse = [];
