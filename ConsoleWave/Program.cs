@@ -1,9 +1,6 @@
 ﻿using WaveLib;
 using WaveLib.Parser;
 
-Console.ForegroundColor = ConsoleColor.White;
-Console.BackgroundColor = ConsoleColor.Black;
-
 var random = new Random(Environment.TickCount);
 var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black, ConsoleColor.White, ConsoleColor.Gray]).ToArray();
 var changes = new List<GridPosition<Cell>>();
@@ -11,14 +8,21 @@ var changes = new List<GridPosition<Cell>>();
 var (schema, tileSet) = await ReadSchema(args[0]);
 var synthesizer = new WaveSynthesizer(Console.WindowWidth, Console.WindowHeight, schema, random);
 
-Console.WriteLine("RULES");
-foreach (var constraint in schema.Order())
-	Console.WriteLine(constraint);
+// Console.WriteLine("RULES");
+// foreach (var constraint in schema.Order())
+// 	Console.WriteLine(constraint);
+
+Console.CancelKeyPress += (s, e) =>
+{
+	Console.ResetColor();
+	Console.SetCursorPosition(0, synthesizer.Grid.Height - 1);
+	Console.WriteLine();
+};
 
 while (true)
 {
 	Console.CursorVisible = true;
-	Console.ReadLine();
+	Console.ResetColor();
 	Console.Clear();
 	Console.CursorVisible = false;
 
@@ -29,12 +33,14 @@ while (true)
 		Draw(changes);
 		changes.Clear();
 	}
+
+	while (Console.KeyAvailable) Console.ReadKey(true);
+	Console.ReadKey(true);
 }
+
 
 void Draw(IEnumerable<GridPosition<Cell>> changes)
 {
-	var foreground = Console.ForegroundColor;
-	var background = Console.BackgroundColor;
 	foreach (var (x, y, cell) in changes)
 	{
 		Console.SetCursorPosition(x, y);
@@ -55,8 +61,6 @@ void Draw(IEnumerable<GridPosition<Cell>> changes)
 			_ => (char)('0' + cell.SuperPosition.Count)
 		});
 	}
-	Console.ForegroundColor = foreground;
-	Console.BackgroundColor = background;
 }
 
 async Task<(WaveSchema, char[])> ReadSchema(string path)
