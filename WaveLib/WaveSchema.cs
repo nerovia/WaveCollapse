@@ -7,14 +7,18 @@ namespace WaveLib
 	{
 		readonly HashSet<Constraint> constraints = [];
 
+		public Dictionary<Constraint, int> Weights { get; } = new();
+
 		public IEnumerator<Constraint> GetEnumerator() => constraints.GetEnumerator();
 
 		IEnumerator IEnumerable.GetEnumerator() => constraints.GetEnumerator();
 
 		public bool Add(int subId, int objId, GridOffset delta)
 		{
-			if (constraints.Add(new(subId, objId, delta)))
+			var item = new Constraint(subId, objId, delta);
+			if (constraints.Add(item))
 			{
+				constraints.TryGetValue(item, out var constraint);
 				constraints.Add(new(objId, subId, -delta));
 				return false;
 			}

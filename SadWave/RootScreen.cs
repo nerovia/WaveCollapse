@@ -97,11 +97,7 @@ namespace SadWave.Scenes
 			var changes = new List<GridPosition<Cell>>();
 
 			await Task.Yield();
-			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext(changes))
-			{
-				DrawCanvas(changes);
-				changes.Clear();
-			}
+			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext(DrawCallback)) ;
 		}
 
 		async Task OneShot(CancellationToken cancellationToken)
@@ -109,29 +105,24 @@ namespace SadWave.Scenes
 			synthesizer.Reset();
 			canvas.Surface.Clear();
 			await Task.Yield();
-			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext()) { }
-			DrawCanvas(synthesizer.Grid.Traverse());
+			while (!cancellationToken.IsCancellationRequested && synthesizer.CollapseNext());
 		}
 
-		void DrawCanvas(IEnumerable<GridPosition<Cell>> changes)
+		void DrawCallback(GridPosition<Cell> pos)
 		{
-			foreach (var (x, y, cell) in changes)
+			var (x, y, cell) = pos;
+			var coloredGlyph = canvas.Surface[x, y];
+			coloredGlyph.Glyph = cell.Status switch
 			{
-				var coloredGlyph = canvas.Surface[x, y];
-				coloredGlyph.Glyph = cell.State switch
-				{
-					CellState.Collapsed => tileSet[cell.Position],
-					_ => (char)(cell.SuperPosition.Count + '0')
-				};
-				coloredGlyph.Foreground = cell.State switch
-				{
-					CellState.Collapsed => palette[cell.Position],
-					CellState.SuperPosition => palette[^cell.SuperPosition.Count],
-					_ => Color.Black
-				};
-				//coloredGlyph.Foreground = cell.IsCollapsed ? Color.White : palette[^cell.Entropy];
-				//coloredGlyph.Background = cell.IsCollapsed ? palette[cell.TileId] : Color.Black;
-			}
+				CellStatus.Collapsed => tileSet[cell.State],
+				_ => (char)(cell.SuperState.Count + '0')
+			};
+			coloredGlyph.Foreground = cell.Status switch
+			{
+				CellStatus.Collapsed => palette[cell.State],
+				CellStatus.Undetermined => palette[^cell.SuperState.Count],
+				_ => Color.Black
+			};
 			canvas.IsDirty = true;
 		}
 

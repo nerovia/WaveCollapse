@@ -1,19 +1,21 @@
-﻿namespace WaveLib
+﻿using System.Diagnostics.SymbolStore;
+
+namespace WaveLib
 {
-	public class WaveSynthesizer(int width, int height, WaveSchema schema, Random random)
+	public class WaveSynthesizer(int width, int height, IEnumerable<Constraint> constraints, Random random)
 	{
-		readonly HashSet<int> tileIds = schema.Select(it => it.SubjectId).ToHashSet();
-		readonly IEnumerable<IGrouping<GridOffset, Constraint>> constraints = schema.GroupBy(it => it.Delta);
+		readonly HashSet<int> tileIds = constraints.Select(it => it.SubjectId).ToHashSet();
+		readonly IEnumerable<IGrouping<GridOffset, Constraint>> offsetGroups = constraints.GroupBy(it => it.Delta);
 		readonly Func<int, int> WeightSelector = id => 1;
 
-		public readonly Random Random = random;
+		public Random Random { get; set; } = random;
 		public IGrid<Cell> Grid { get; } = WaveLib.Grid.Create<Cell>(width, height, _ => new());
 				
 		IEnumerable<GridPosition<Cell>>? Priority()
 		{
 			return (from pos in Grid.Traverse()
-					where pos.Cell.State == CellState.SuperPosition
-					group pos by pos.Cell.SuperPosition.Count).MinBy(it => it.Key);
+					where pos.Cell.Status == CellStatus.Undetermined
+					group pos by pos.Cell.SuperState.Count).MinBy(it => it.Key);
 		}
 
 		public void Reset()
@@ -22,22 +24,22 @@
 				cell.Reset(tileIds);
 		}
 
-		public bool CollapseNext(ICollection<GridPosition<Cell>>? changes = null)
+		public bool CollapseNext(Action<GridPosition<Cell>>? callback = null)
 		{
 			var next = Priority()?.ElementAtRandom(Random);
 			if (next.HasValue)
 			{
 				var (x, y, cell) = next.Value;
 				var subId = cell.Collapse(Random, WeightSelector);
-				changes?.Add(next.Value);
+				callback?.Invoke(next.Value);
 
-				foreach (var grouping in constraints)
+				foreach (var grouping in offsetGroups)
 				{
 					var delta = grouping.Key;
 					if (Grid.TryAt(x + delta.X, y + delta.Y, out var pos))
 					{
 						pos.Cell.Constrain(from constraint in grouping where constraint.SubjectId == subId select constraint.ObjectId);
-						changes?.Add(pos);
+						callback?.Invoke(pos);
 					}
 				}
 				return true;

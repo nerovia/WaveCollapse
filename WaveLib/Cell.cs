@@ -1,8 +1,8 @@
 ﻿namespace WaveLib
 {
-	public enum CellState
+	public enum CellStatus
 	{
-		SuperPosition,
+		Undetermined,
 		Collapsed,
 		Exhausted,
 	}
@@ -10,37 +10,37 @@
 	public class Cell
 	{
 		int position = -1;
-		CellState cellState;
+		CellStatus cellState;
 		readonly HashSet<int> superPosition = [];
 
-		public CellState State { get => cellState; }
-		public IReadOnlySet<int> SuperPosition { get => superPosition; }
-		public int Position { get => position; }
+		public CellStatus Status { get => cellState; }
+		public IReadOnlySet<int> SuperState { get => superPosition; }
+		public int State { get => position; }
 
 		internal void Constrain(IEnumerable<int> superPosition)
 		{
-			if (cellState == CellState.SuperPosition)
+			if (cellState == CellStatus.Undetermined)
 			{
 				this.superPosition.IntersectWith(superPosition);
 				if (this.superPosition.Count == 0)
-					cellState = CellState.Exhausted;
+					cellState = CellStatus.Exhausted;
 			}
 		}
 
 		internal int Collapse(Random random, Func<int, int> weightSelector)
 		{
-			if (cellState == CellState.SuperPosition)
+			if (cellState == CellStatus.Undetermined)
 			{
 				position = superPosition.ElementAtRandom(random, weightSelector);
 				superPosition.Clear();
-				cellState = CellState.Collapsed;
+				cellState = CellStatus.Collapsed;
 			}
 			return position;
 		}
 
 		internal void Reset(IEnumerable<int> superPosition)
 		{
-			cellState = CellState.SuperPosition;
+			cellState = CellStatus.Undetermined;
 			position = -1;
 			this.superPosition.Clear();
 			this.superPosition.UnionWith(superPosition);

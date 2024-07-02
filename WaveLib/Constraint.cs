@@ -2,6 +2,8 @@
 {
 	public record Constraint(int SubjectId, int ObjectId, GridOffset Delta) : IComparable<Constraint>
 	{
+		public int Weight { get; set; }
+
 		public int CompareTo(Constraint? other)
 		{
 			if (other == null)

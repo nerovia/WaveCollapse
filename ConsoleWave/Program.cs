@@ -3,14 +3,9 @@ using WaveLib.Parser;
 
 var random = new Random(Environment.TickCount);
 var palette = Enum.GetValues<ConsoleColor>().Except([ConsoleColor.Black, ConsoleColor.White, ConsoleColor.Gray]).ToArray();
-var changes = new List<GridPosition<Cell>>();
 
 var (schema, tileSet) = await ReadSchema(args[0]);
 var synthesizer = new WaveSynthesizer(Console.WindowWidth, Console.WindowHeight, schema, random);
-
-// Console.WriteLine("RULES");
-// foreach (var constraint in schema.Order())
-// 	Console.WriteLine(constraint);
 
 Console.CancelKeyPress += (s, e) =>
 {
@@ -28,39 +23,33 @@ while (true)
 
 	random.Shuffle(palette);
 	synthesizer.Reset();
-	while (synthesizer.CollapseNext(changes))
-	{
-		Draw(changes);
-		changes.Clear();
-	}
+	while (synthesizer.CollapseNext(DrawCallback)) ;
 
 	while (Console.KeyAvailable) Console.ReadKey(true);
 	Console.ReadKey(true);
 }
 
 
-void Draw(IEnumerable<GridPosition<Cell>> changes)
+void DrawCallback(GridPosition<Cell> pos)
 {
-	foreach (var (x, y, cell) in changes)
+	var (x, y, cell) = pos;
+	Console.SetCursorPosition(x, y);
+	Console.ForegroundColor = cell.Status switch
 	{
-		Console.SetCursorPosition(x, y);
-		Console.ForegroundColor = cell.State switch
-		{
-			CellState.SuperPosition => palette[^cell.SuperPosition.Count],
-			CellState.Collapsed => ConsoleColor.White,
-			_ => ConsoleColor.Black
-		};
-		Console.BackgroundColor = cell.State switch
-		{
-			CellState.Collapsed => palette![cell.Position],
-			_ => ConsoleColor.Black
-		};
-		Console.Write(cell.State switch 
-		{ 
-			CellState.Collapsed => tileSet![cell.Position],
-			_ => (char)('0' + cell.SuperPosition.Count)
-		});
-	}
+		CellStatus.Undetermined => palette[^cell.SuperState.Count],
+		CellStatus.Collapsed => ConsoleColor.White,
+		_ => ConsoleColor.Black
+	};
+	Console.BackgroundColor = cell.Status switch
+	{
+		CellStatus.Collapsed => palette![cell.State],
+		_ => ConsoleColor.Black
+	};
+	Console.Write(cell.Status switch 
+	{ 
+		CellStatus.Collapsed => tileSet![cell.State],
+		_ => (char)('0' + cell.SuperState.Count)
+	});
 }
 
 async Task<(WaveSchema, char[])> ReadSchema(string path)
