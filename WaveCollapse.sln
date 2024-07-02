@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaveLib", "WaveLib\WaveLib.csproj", "{9FF73458-1F5B-4C92-932B-ED57FDAD77F1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleWave", "ConsoleWave\ConsoleWave.csproj", "{132C2EC9-CFE6-4B29-8737-D7881AE4C4DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaveCli", "WaveCli\WaveCli.csproj", "{132C2EC9-CFE6-4B29-8737-D7881AE4C4DA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SadWave", "SadWave\SadWave.csproj", "{18D35E6D-56CD-42C4-BF2F-D23B1099FE18}"
 EndProject
