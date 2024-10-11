@@ -36,11 +36,9 @@ namespace WaveLib
 				foreach (var grouping in offsetGroups)
 				{
 					var delta = grouping.Key;
-					if (Grid.TryAt(x + delta.X, y + delta.Y, out var pos))
-					{
-						pos.Cell.Constrain(from constraint in grouping where constraint.SubjectId == subId select constraint.ObjectId);
-						callback?.Invoke(pos);
-					}
+					var pos = Grid.AtWrap(x + delta.X, y + delta.Y);
+					pos.Cell.Constrain(from constraint in grouping where constraint.SubjectId == subId select constraint.ObjectId);
+					callback?.Invoke(pos);
 				}
 				return true;
 			}

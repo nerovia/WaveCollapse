@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -86,6 +87,11 @@ namespace WaveLib
 
 		public static GridPosition<T> At<T>(this IGrid<T> self, int x, int y) => new(x, y, self[x, y]);
 	
+		public static GridPosition<T> AtWrap<T>(this IGrid<T> self, int x, int y)
+		{
+			return self.At(Util.Mod(x, self.Width), Util.Mod(y, self.Height));
+		}
+
 		public static bool TryGet<T>(this IGrid<T> self, int x, int y, [MaybeNullWhen(false)] out T value)
 		{
 			if (self.Contains(x, y))

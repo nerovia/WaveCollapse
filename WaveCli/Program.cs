@@ -13,6 +13,7 @@ class Program : RootCommand
 	readonly Argument<string> SchemaArgument;
 	readonly Option<int> WidthOption;
 	readonly Option<int> HeightOption;
+	readonly Option<int> TessellateOption;
 
 	public Program()
 	{
@@ -21,16 +22,21 @@ class Program : RootCommand
 
 		WidthOption = new Option<int>(["--width", "-w"], () => Console.WindowWidth);
 		HeightOption = new Option<int>(["--height", "-h"], () => Console.WindowHeight);
+		TessellateOption = new Option<int>(["--tess", "-t"], () => 1);
 
 		AddArgument(SchemaArgument);
 		AddOption(WidthOption);
 		AddOption(HeightOption);
+		AddOption(TessellateOption);
 
-		this.SetHandler(RootHandler, SchemaArgument, WidthOption, HeightOption);
+		this.SetHandler(RootHandler, SchemaArgument, WidthOption, HeightOption, TessellateOption);
 	}
 
-	async void RootHandler(string schemaFile, int width, int height)
+	static async void RootHandler(string schemaFile, int width, int height, int tessellate)
 	{
+		width = Math.Clamp(width, 1, Console.WindowWidth) / tessellate;
+		height = Math.Clamp(height, 1, Console.WindowHeight) / tessellate;
+
 		Random random = new(Environment.TickCount);
 		ConsoleColor[] palette = [
 			ConsoleColor.Blue,
@@ -42,7 +48,6 @@ class Program : RootCommand
 			ConsoleColor.DarkMagenta,
 			ConsoleColor.DarkRed,
 			ConsoleColor.DarkYellow,
-			ConsoleColor.Gray,
 			ConsoleColor.Green,
 			ConsoleColor.Magenta,
 			ConsoleColor.Red,
@@ -55,7 +60,7 @@ class Program : RootCommand
 		Console.CancelKeyPress += (s, e) =>
 		{
 			Console.ResetColor();
-			Console.SetCursorPosition(0, synthesizer.Grid.Height - 1);
+			Console.SetCursorPosition(0, height - 1);
 			Console.WriteLine();
 		};
 
@@ -70,33 +75,38 @@ class Program : RootCommand
 			synthesizer.Reset();
 			while (synthesizer.CollapseNext(pos =>
 			{
-				var (x, y, cell) = pos;
-				Console.SetCursorPosition(x, y);
-				Console.ForegroundColor = cell.Status switch
+				for (int ty = 0; ty < tessellate; ty++)
 				{
-					CellStatus.Undetermined => palette[^cell.SuperState.Count],
-					CellStatus.Collapsed => ConsoleColor.White,
-					_ => ConsoleColor.Black
-				};
-				Console.BackgroundColor = cell.Status switch
-				{
-					CellStatus.Collapsed => palette![cell.State],
-					_ => ConsoleColor.Black
-				};
-				Console.Write(cell.Status switch
-				{
-					CellStatus.Collapsed => tileSet![cell.State],
-					_ => (char)('0' + cell.SuperState.Count)
-				});
+					for (int tx = 0; tx < tessellate; tx++)
+					{
+						var (x, y, cell) = pos;
+						Console.SetCursorPosition(x + tx * width, y + ty * height);
+						Console.ForegroundColor = cell.Status switch
+						{
+							CellStatus.Undetermined => palette[^cell.SuperState.Count],
+							CellStatus.Collapsed => ConsoleColor.White,
+							_ => ConsoleColor.Black
+						};
+						Console.BackgroundColor = cell.Status switch
+						{
+							CellStatus.Collapsed => palette![cell.State],
+							_ => ConsoleColor.Black
+						};
+						Console.Write(cell.Status switch
+						{
+							CellStatus.Collapsed => tileSet![cell.State],
+							_ => (char)('0' + cell.SuperState.Count)
+						});
+					}
+				}
 			}));
 			
 			while (Console.KeyAvailable) Console.ReadKey(true);
 			Console.ReadKey(true);
 		}
-
 	}
 
-	async Task<(WaveSchema, char[])> ReadSchema(string path)
+	static async Task<(WaveSchema, char[])> ReadSchema(string path)
 	{
 		using var file = File.OpenRead(path);
 		switch (Path.GetExtension(path))

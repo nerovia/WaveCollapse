@@ -2,7 +2,7 @@
   "profiles": {
     "ConsoleWave": {
       "commandName": "Project",
-      "commandLineArgs": "../../../../data/diagon.rulz -w 10 -h 10"
+      "commandLineArgs": "../../../../data/diagon.rulz -t 2"
     }
   }
 }

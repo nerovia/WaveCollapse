@@ -21,4 +21,12 @@
 			throw new Exception();
 		}
 	}
+
+	public static class Util
+	{
+		public static int Mod(int n, int m)
+		{
+			return (n %= m) < 0 ? n + m : n;
+		}
+	}
 }
